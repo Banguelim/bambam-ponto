@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BAMBAM BABY – Gerenciar Funcionários</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&family=Playfair+Display:wght@700&display=swap');
+
+:root {
+  --rosa: #F472B6; --rosa-d: #DB2777; --verde: #16A34A;
+  --cinza: #F8F8FA; --borda: #E5E7EB; --texto: #1F2937; --sub: #6B7280;
+  --vermelho: #DC2626;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Montserrat', sans-serif; background: #F0F2F5; color: var(--texto); min-height: 100vh; }
+
+header {
+  background: #fff; border-bottom: 2px solid var(--borda);
+  padding: 16px 28px; display: flex; align-items: center;
+  justify-content: space-between; gap: 12px; flex-wrap: wrap;
+}
+.logo-mark {
+  width: 44px; height: 44px;
+  background: linear-gradient(135deg, var(--rosa), var(--rosa-d));
+  border-radius: 12px; display: flex; align-items: center;
+  justify-content: center; font-size: 1.4rem;
+}
+.header-left { display: flex; align-items: center; gap: 14px; }
+header h1 { font-size: 1.1rem; font-weight: 900; }
+header p  { font-size: .75rem; color: var(--sub); margin-top: 2px; }
+
+main { max-width: 860px; margin: 0 auto; padding: 28px 18px 80px; display: flex; flex-direction: column; gap: 20px; }
+
+.card {
+  background: #fff; border-radius: 16px; padding: 24px;
+  border: 1.5px solid var(--borda); box-shadow: 0 2px 12px #0001;
+}
+.card h2 { font-size: 1rem; font-weight: 800; margin-bottom: 18px; display: flex; align-items: center; gap: 8px; }
+
+/* ── FORMULÁRIO ADICIONAR ── */
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media(max-width:560px){ .form-grid { grid-template-columns: 1fr; } }
+
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field label { font-size: .75rem; font-weight: 700; color: var(--sub); text-transform: uppercase; letter-spacing: .8px; }
+.field input, .field select {
+  padding: 10px 14px; border: 1.5px solid var(--borda); border-radius: 10px;
+  font-family: 'Montserrat', sans-serif; font-size: .88rem; color: var(--texto);
+  background: var(--cinza); transition: border-color .2s;
+}
+.field input:focus, .field select:focus { outline: none; border-color: var(--rosa); background: #fff; }
+
+.btn {
+  padding: 11px 22px; border: none; border-radius: 10px;
+  font-family: 'Montserrat', sans-serif; font-size: .88rem; font-weight: 700;
+  cursor: pointer; transition: .15s; display: inline-flex; align-items: center; gap: 7px;
+}
+.btn:hover { opacity: .88; transform: translateY(-1px); }
+.btn:active { transform: scale(.97); }
+.btn-rosa    { background: linear-gradient(135deg, var(--rosa), var(--rosa-d)); color: #fff; box-shadow: 0 4px 14px #F472B644; }
+.btn-verde   { background: #DCFCE7; color: var(--verde); border: 1.5px solid #86EFAC; }
+.btn-perigo  { background: #FEE2E2; color: var(--vermelho); border: 1.5px solid #FCA5A5; }
+.btn-cinza   { background: #F3F4F6; color: var(--sub); }
+.btn-sm { padding: 7px 14px; font-size: .78rem; border-radius: 8px; }
+
+/* ── LISTA DE FUNCIONÁRIOS ── */
+.emp-list { display: flex; flex-direction: column; gap: 10px; }
+
+.emp-row {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 16px; border-radius: 12px;
+  border: 1.5px solid var(--borda); background: var(--cinza);
+  transition: border-color .2s;
+}
+.emp-row:hover { border-color: var(--rosa); background: #fff; }
+
+.emp-avatar {
+  width: 46px; height: 46px; border-radius: 50%;
+  background: linear-gradient(135deg, #FFDCE8, #FFF0F6);
+  border: 2px solid var(--borda); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem; font-weight: 900; color: var(--rosa-d);
+  overflow: hidden;
+}
+.emp-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+
+.emp-info { flex: 1; min-width: 0; }
+.emp-info .nome { font-size: .88rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.emp-info .meta { font-size: .72rem; color: var(--sub); margin-top: 2px; display: flex; gap: 10px; flex-wrap: wrap; }
+.emp-info .meta span { display: flex; align-items: center; gap: 3px; }
+
+.emp-actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+/* ── CARGO BADGE ── */
+.cargo-badge {
+  display: inline-block; padding: 2px 10px; border-radius: 20px;
+  font-size: .68rem; font-weight: 700;
+  background: #FFF0F6; color: var(--rosa-d); border: 1px solid #FECDD3;
+}
+
+/* ── MODAL EDITAR ── */
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: #0006; z-index: 100;
+  align-items: center; justify-content: center;
+  padding: 20px;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: #fff; border-radius: 18px; padding: 28px;
+  width: 100%; max-width: 480px;
+  box-shadow: 0 20px 60px #0003;
+  animation: popIn .25s ease;
+}
+.modal h3 { font-size: 1rem; font-weight: 800; margin-bottom: 20px; }
+@keyframes popIn { from { transform: scale(.92); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+/* ── CONTADOR ── */
+.counter-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 10px; margin-bottom: 6px;
+}
+.counter { font-size: .8rem; color: var(--sub); font-weight: 600; }
+.counter strong { color: var(--texto); }
+
+/* ── BUSCA ── */
+.search-wrap { position: relative; margin-bottom: 16px; }
+.search-wrap input {
+  width: 100%; padding: 10px 14px 10px 38px;
+  border: 1.5px solid var(--borda); border-radius: 10px;
+  font-family: 'Montserrat', sans-serif; font-size: .88rem;
+  background: var(--cinza); color: var(--texto); transition: border-color .2s;
+}
+.search-wrap input:focus { outline: none; border-color: var(--rosa); background: #fff; }
+.search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--sub); font-size: .9rem; pointer-events: none; }
+
+/* ── EMPTY STATE ── */
+.empty { text-align: center; padding: 40px 20px; color: var(--sub); font-size: .9rem; }
+.empty .icon { font-size: 2.5rem; margin-bottom: 10px; }
+
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 99px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <div class="logo-mark">🍼</div>
+    <div>
+      <h1>Gerenciar Funcionários</h1>
+      <p>Adicione, edite ou remova funcionários do sistema de ponto</p>
+    </div>
+  </div>
+  <button class="btn btn-cinza" onclick="location.href='admin.html'">← Voltar ao Admin</button>
+</header>
+
+<main>
+
+  <!-- ADICIONAR -->
+  <div class="card">
+    <h2>➕ Adicionar funcionário</h2>
+    <div class="form-grid">
+      <div class="field" style="grid-column:1/-1">
+        <label>Nome completo</label>
+        <input type="text" id="novo-nome" placeholder="Ex: MARIA SILVA SANTOS" oninput="this.value=this.value.toUpperCase()">
+      </div>
+      <div class="field">
+        <label>Cargo</label>
+        <input type="text" id="novo-cargo" placeholder="Ex: Colaboradora, Gerente…">
+      </div>
+      <div class="field">
+        <label>ID personalizado (opcional)</label>
+        <input type="text" id="novo-id" placeholder="Gerado automaticamente">
+      </div>
+    </div>
+    <br>
+    <button class="btn btn-rosa" onclick="adicionarFuncionario()">➕ Adicionar funcionário</button>
+  </div>
+
+  <!-- LISTA -->
+  <div class="card">
+    <div class="counter-bar">
+      <h2 style="margin:0">👥 Funcionários cadastrados</h2>
+      <span class="counter">Total: <strong id="total-count">0</strong></span>
+    </div>
+
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="busca" placeholder="Buscar funcionário…" oninput="renderLista()">
+    </div>
+
+    <div class="emp-list" id="emp-list">
+      <div class="empty"><div class="icon">👤</div>Nenhum funcionário cadastrado.</div>
+    </div>
+  </div>
+
+</main>
+
+<!-- MODAL EDITAR -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h3>✏️ Editar funcionário</h3>
+    <div class="form-grid">
+      <div class="field" style="grid-column:1/-1">
+        <label>Nome completo</label>
+        <input type="text" id="edit-nome" oninput="this.value=this.value.toUpperCase()">
+      </div>
+      <div class="field">
+        <label>Cargo</label>
+        <input type="text" id="edit-cargo">
+      </div>
+      <div class="field">
+        <label>ID (não editável)</label>
+        <input type="text" id="edit-id" disabled style="opacity:.5">
+      </div>
+    </div>
+    <br>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn btn-cinza" onclick="fecharModal()">Cancelar</button>
+      <button class="btn btn-rosa" onclick="salvarEdicao()">💾 Salvar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════
+// FUNCIONÁRIOS PADRÃO (carregados na 1ª vez)
+// ════════════════════════════════════════════
+const PADRAO = [
+  { id:'EMP001', nome:'ADILSON DO CARMO MACHADO',            cargo:'Colaborador'  },
+  { id:'EMP002', nome:'ANA LUIZA SECO SILVA DE OLIVEIRA',    cargo:'Colaboradora' },
+  { id:'EMP003', nome:'ANA PAULA ZULATO PEREIRA',            cargo:'Colaboradora' },
+  { id:'EMP004', nome:'BEUTIMAR ANA HELENA DA SILVA',        cargo:'Colaboradora' },
+  { id:'EMP005', nome:'ERIKA CRISTINA DA SILVA',             cargo:'Colaboradora' },
+  { id:'EMP006', nome:'FABIANA ANICETO FERREIRA',            cargo:'Colaboradora' },
+  { id:'EMP007', nome:'JOSILANE LEANDRO VENTURA',            cargo:'Colaboradora' },
+  { id:'EMP008', nome:'SERGIO SOARES RAMOS',                 cargo:'Colaborador'  },
+  { id:'EMP009', nome:'SILVANA APARECIDA DA SILVA MEDEIROS', cargo:'Colaboradora' },
+  { id:'EMP010', nome:'THAYLLON SALAZAR RAMOS BERNARDINO',   cargo:'Colaborador'  },
+  { id:'EMP011', nome:'PABLO ANDERSON MODESTO JUVENAL',      cargo:'Colaborador'  },
+];
+
+// ════════════════════════════════════════════
+// STORAGE
+// ════════════════════════════════════════════
+function getFuncionarios() {
+  const raw = localStorage.getItem('bambam_funcionarios');
+  if (!raw) {
+    // Primeira vez: carrega os padrão
+    localStorage.setItem('bambam_funcionarios', JSON.stringify(PADRAO));
+    return PADRAO;
+  }
+  return JSON.parse(raw);
+}
+function setFuncionarios(lista) {
+  localStorage.setItem('bambam_funcionarios', JSON.stringify(lista));
+}
+
+// ════════════════════════════════════════════
+// GERAR ID AUTOMÁTICO
+// ════════════════════════════════════════════
+function gerarId(lista) {
+  const nums = lista.map(f => parseInt(f.id.replace('EMP',''))).filter(n => !isNaN(n));
+  const max  = nums.length ? Math.max(...nums) : 0;
+  return 'EMP' + String(max + 1).padStart(3, '0');
+}
+
+// ════════════════════════════════════════════
+// INICIAIS
+// ════════════════════════════════════════════
+function iniciais(nome) {
+  const p = nome.trim().split(' ');
+  return (p[0][0] + (p[1]?.[0] || '')).toUpperCase();
+}
+
+// ════════════════════════════════════════════
+// RENDER LISTA
+// ════════════════════════════════════════════
+function renderLista() {
+  const lista  = getFuncionarios();
+  const busca  = document.getElementById('busca').value.toLowerCase();
+  const fotos  = JSON.parse(localStorage.getItem('bambam_fotos') || '{}');
+  const filtro = lista.filter(f => f.nome.toLowerCase().includes(busca) || f.id.toLowerCase().includes(busca));
+
+  document.getElementById('total-count').textContent = lista.length;
+  const container = document.getElementById('emp-list');
+
+  if (filtro.length === 0) {
+    container.innerHTML = `<div class="empty"><div class="icon">${busca ? '🔍' : '👤'}</div>${busca ? 'Nenhum resultado para "'+busca+'".' : 'Nenhum funcionário cadastrado.'}</div>`;
+    return;
+  }
+
+  container.innerHTML = filtro.map((f, i) => {
+    const temFoto = !!fotos[f.id];
+    return `
+    <div class="emp-row">
+      <div class="emp-avatar">
+        ${temFoto ? `<img src="${fotos[f.id]}" alt="${f.nome}">` : iniciais(f.nome)}
+      </div>
+      <div class="emp-info">
+        <div class="nome">${f.nome}</div>
+        <div class="meta">
+          <span>🪪 ${f.id}</span>
+          <span class="cargo-badge">${f.cargo || 'Colaborador'}</span>
+          ${temFoto ? '<span style="color:#16A34A">📸 Com foto</span>' : '<span style="color:#9CA3AF">📷 Sem foto</span>'}
+        </div>
+      </div>
+      <div class="emp-actions">
+        <button class="btn btn-verde btn-sm" onclick="abrirModal('${f.id}')">✏️</button>
+        <button class="btn btn-perigo btn-sm" onclick="removerFuncionario('${f.id}')">🗑️</button>
+      </div>
+    </div>
+  `}).join('');
+}
+
+// ════════════════════════════════════════════
+// ADICIONAR
+// ════════════════════════════════════════════
+function adicionarFuncionario() {
+  const nome  = document.getElementById('novo-nome').value.trim().toUpperCase();
+  const cargo = document.getElementById('novo-cargo').value.trim() || 'Colaborador';
+  let   id    = document.getElementById('novo-id').value.trim().toUpperCase();
+
+  if (!nome) { alert('⚠️ Informe o nome completo.'); return; }
+
+  const lista = getFuncionarios();
+
+  if (!id) {
+    id = gerarId(lista);
+  } else if (lista.find(f => f.id === id)) {
+    alert('⚠️ Este ID já existe. Escolha outro ou deixe em branco para gerar automaticamente.');
+    return;
+  }
+
+  lista.push({ id, nome, cargo });
+  setFuncionarios(lista);
+
+  // Limpa form
+  document.getElementById('novo-nome').value  = '';
+  document.getElementById('novo-cargo').value = '';
+  document.getElementById('novo-id').value    = '';
+
+  renderLista();
+  mostrarToast(`✅ ${nome.split(' ')[0]} adicionado(a) com sucesso! ID: ${id}`);
+}
+
+// ════════════════════════════════════════════
+// REMOVER
+// ════════════════════════════════════════════
+function removerFuncionario(id) {
+  const lista = getFuncionarios();
+  const f = lista.find(x => x.id === id);
+  if (!f) return;
+
+  if (!confirm(`⚠️ Remover "${f.nome}" do sistema?\n\nOs registros de ponto dele(a) serão mantidos, mas ele(a) não poderá mais bater ponto.\n\nEsta ação pode ser desfeita adicionando-o(a) novamente.`)) return;
+
+  const novaLista = lista.filter(x => x.id !== id);
+  setFuncionarios(novaLista);
+  renderLista();
+  mostrarToast(`🗑️ ${f.nome.split(' ')[0]} removido(a).`);
+}
+
+// ════════════════════════════════════════════
+// EDITAR
+// ════════════════════════════════════════════
+let editandoId = null;
+
+function abrirModal(id) {
+  const lista = getFuncionarios();
+  const f = lista.find(x => x.id === id);
+  if (!f) return;
+  editandoId = id;
+  document.getElementById('edit-nome').value  = f.nome;
+  document.getElementById('edit-cargo').value = f.cargo || '';
+  document.getElementById('edit-id').value    = f.id;
+  document.getElementById('modal').classList.add('open');
+}
+
+function fecharModal() {
+  document.getElementById('modal').classList.remove('open');
+  editandoId = null;
+}
+
+function salvarEdicao() {
+  if (!editandoId) return;
+  const nome  = document.getElementById('edit-nome').value.trim().toUpperCase();
+  const cargo = document.getElementById('edit-cargo').value.trim() || 'Colaborador';
+  if (!nome) { alert('⚠️ O nome não pode ficar vazio.'); return; }
+
+  const lista = getFuncionarios();
+  const idx   = lista.findIndex(f => f.id === editandoId);
+  if (idx === -1) return;
+
+  lista[idx].nome  = nome;
+  lista[idx].cargo = cargo;
+  setFuncionarios(lista);
+  fecharModal();
+  renderLista();
+  mostrarToast('💾 Alterações salvas!');
+}
+
+// Fecha modal clicando fora
+document.getElementById('modal').addEventListener('click', function(e) {
+  if (e.target === this) fecharModal();
+});
+
+// ════════════════════════════════════════════
+// TOAST
+// ════════════════════════════════════════════
+function mostrarToast(msg) {
+  let t = document.getElementById('toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'toast';
+    Object.assign(t.style, {
+      position:'fixed', bottom:'24px', left:'50%', transform:'translateX(-50%) translateY(80px)',
+      background:'#1F2937', color:'#fff', padding:'12px 24px', borderRadius:'30px',
+      fontFamily:'Montserrat,sans-serif', fontWeight:'700', fontSize:'.88rem',
+      boxShadow:'0 8px 24px #0003', transition:'transform .3s', zIndex:'999',
+      whiteSpace:'nowrap'
+    });
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  setTimeout(() => { t.style.transform = 'translateX(-50%) translateY(0)'; }, 10);
+  setTimeout(() => { t.style.transform = 'translateX(-50%) translateY(80px)'; }, 3200);
+}
+
+// ════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════
+renderLista();
+</script>
+</body>
+</html>

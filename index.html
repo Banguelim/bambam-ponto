@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BAMBAM BABY – Registro de Ponto</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;900&family=Baloo+2:wght@700;800&display=swap');
+
+  :root {
+    --rosa:   #FF6B9D;
+    --roxo:   #C678DD;
+    --azul:   #61AFEF;
+    --verde:  #98C379;
+    --amarelo:#E5C07B;
+    --bg:     #1a1a2e;
+    --card:   #16213e;
+    --card2:  #0f3460;
+    --text:   #f0f0f0;
+    --sub:    #a0aec0;
+    --radius: 18px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* ── HEADER ── */
+  header {
+    width: 100%;
+    background: linear-gradient(135deg, #C678DD 0%, #FF6B9D 100%);
+    padding: 18px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 4px 20px #FF6B9D55;
+  }
+  header h1 {
+    font-family: 'Baloo 2', cursive;
+    font-size: 1.6rem;
+    letter-spacing: 1px;
+    color: #fff;
+    text-shadow: 0 2px 8px #0005;
+  }
+  header .badge {
+    background: #fff3;
+    border: 1.5px solid #fff6;
+    border-radius: 30px;
+    padding: 4px 14px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  /* ── WIFI ALERT ── */
+  #wifi-block {
+    margin: 32px auto;
+    max-width: 420px;
+    width: 92%;
+    background: #ff4d6d22;
+    border: 2px solid #ff4d6d;
+    border-radius: var(--radius);
+    padding: 28px 24px;
+    text-align: center;
+  }
+  #wifi-block .icon { font-size: 3rem; margin-bottom: 10px; }
+  #wifi-block h2 { color: #ff4d6d; font-size: 1.2rem; margin-bottom: 8px; }
+  #wifi-block p { color: var(--sub); font-size: 0.9rem; line-height: 1.5; }
+
+  /* ── MAIN CARD ── */
+  #app {
+    width: 92%;
+    max-width: 480px;
+    margin: 28px auto 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 22px;
+    box-shadow: 0 4px 24px #0004;
+    border: 1px solid #ffffff0f;
+  }
+  .card h2 {
+    font-family: 'Baloo 2', cursive;
+    font-size: 1.1rem;
+    color: var(--rosa);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* ── SCANNER ── */
+  #reader {
+    border-radius: 12px;
+    overflow: hidden;
+    background: #000;
+    min-height: 240px;
+  }
+  #reader video { border-radius: 12px; }
+
+  /* ── STATUS BOX ── */
+  #status-box {
+    display: none;
+    border-radius: 12px;
+    padding: 18px;
+    text-align: center;
+    animation: popIn .3s ease;
+  }
+  #status-box.success { background: #98C37922; border: 2px solid var(--verde); }
+  #status-box.error   { background: #ff4d6d22; border: 2px solid #ff4d6d; }
+  #status-box .emp-name { font-size: 1.2rem; font-weight: 900; margin: 6px 0; }
+  #status-box .action  { font-size: 0.95rem; color: var(--sub); }
+  #status-box .time    { font-size: 1.4rem; font-weight: 700; color: var(--amarelo); margin-top: 6px; }
+
+  /* ── BOTÃO ── */
+  .btn {
+    display: block;
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 12px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 1rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: transform .15s, opacity .15s;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn-rosa   { background: linear-gradient(90deg,#FF6B9D,#C678DD); color:#fff; }
+  .btn-verde  { background: linear-gradient(90deg,#56d275,#98C379); color:#fff; }
+  .btn-sm {
+    padding: 8px 16px;
+    font-size: 0.82rem;
+    border-radius: 8px;
+    border: none;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity .15s;
+  }
+  .btn-sm:hover { opacity: .85; }
+
+  /* ── RELÓGIO ── */
+  #clock {
+    text-align: center;
+    font-size: 2.4rem;
+    font-weight: 900;
+    font-family: 'Baloo 2', cursive;
+    color: var(--azul);
+    letter-spacing: 2px;
+  }
+  #date-str { text-align:center; font-size:.85rem; color:var(--sub); margin-top:2px; }
+
+  /* ── LOG ── */
+  #log-list { list-style: none; display:flex; flex-direction:column; gap:8px; max-height:220px; overflow-y:auto; }
+  #log-list li {
+    background: var(--card2);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 0.82rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+  }
+  #log-list li .log-name { font-weight: 700; flex:1; }
+  #log-list li .log-action { color: var(--sub); font-size:0.78rem; }
+  #log-list li .log-time { color: var(--amarelo); font-weight:700; white-space:nowrap; }
+
+  /* ── ADMIN LINK ── */
+  #admin-btn {
+    position: fixed;
+    bottom: 20px; right: 20px;
+    background: var(--card2);
+    border: 1.5px solid var(--roxo);
+    border-radius: 50px;
+    padding: 10px 18px;
+    color: var(--roxo);
+    font-weight: 700;
+    font-size: 0.82rem;
+    cursor: pointer;
+    box-shadow: 0 4px 16px #0006;
+    transition: background .2s;
+  }
+  #admin-btn:hover { background: var(--roxo); color:#fff; }
+
+  @keyframes popIn {
+    from { transform:scale(.85); opacity:0; }
+    to   { transform:scale(1);   opacity:1; }
+  }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width:5px; }
+  ::-webkit-scrollbar-track { background:transparent; }
+  ::-webkit-scrollbar-thumb { background:#ffffff22; border-radius:99px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🍼 BAMBAM BABY</h1>
+  <span class="badge" id="wifi-badge">Verificando rede…</span>
+</header>
+
+<!-- Bloqueio Wi-Fi -->
+<div id="wifi-block" style="display:none">
+  <div class="icon">📵</div>
+  <h2>Fora da rede da empresa</h2>
+  <p>O registro de ponto só é permitido quando você estiver conectado ao Wi-Fi da <strong>BAMBAM BABY</strong>.<br><br>Conecte-se à rede e tente novamente.</p>
+  <br>
+  <button class="btn btn-rosa" onclick="location.reload()">🔄 Tentar novamente</button>
+</div>
+
+<div id="app">
+
+  <!-- Relógio -->
+  <div class="card">
+    <div id="clock">--:--:--</div>
+    <div id="date-str">carregando...</div>
+  </div>
+
+  <!-- Scanner -->
+  <div class="card">
+    <h2>📷 Escanear Crachá</h2>
+    <div id="reader"></div>
+    <div id="status-box" style="margin-top:14px"></div>
+  </div>
+
+  <!-- Log do dia -->
+  <div class="card">
+    <h2>📋 Registros de hoje</h2>
+    <ul id="log-list"><li style="color:var(--sub);font-size:.85rem;padding:10px">Nenhum registro ainda.</li></ul>
+  </div>
+
+</div>
+
+<button id="admin-btn" onclick="location.href='admin.html'">⚙️ Painel Admin</button>
+
+<script>
+// ════════════════════════════════════════════
+// CONFIGURAÇÃO
+// ════════════════════════════════════════════
+const COMPANY_WIFI_IPS = []; // deixe vazio para aceitar qualquer rede, ou coloque ['192.168.1'] para filtrar
+
+// Funcionários carregados dinamicamente do localStorage (gerenciados em funcionarios.html)
+const PADRAO_FUNCIONARIOS = [
+  { id:'EMP001', nome:'ADILSON DO CARMO MACHADO',            cargo:'Colaborador'  },
+  { id:'EMP002', nome:'ANA LUIZA SECO SILVA DE OLIVEIRA',    cargo:'Colaboradora' },
+  { id:'EMP003', nome:'ANA PAULA ZULATO PEREIRA',            cargo:'Colaboradora' },
+  { id:'EMP004', nome:'BEUTIMAR ANA HELENA DA SILVA',        cargo:'Colaboradora' },
+  { id:'EMP005', nome:'ERIKA CRISTINA DA SILVA',             cargo:'Colaboradora' },
+  { id:'EMP006', nome:'FABIANA ANICETO FERREIRA',            cargo:'Colaboradora' },
+  { id:'EMP007', nome:'JOSILANE LEANDRO VENTURA',            cargo:'Colaboradora' },
+  { id:'EMP008', nome:'SERGIO SOARES RAMOS',                 cargo:'Colaborador'  },
+  { id:'EMP009', nome:'SILVANA APARECIDA DA SILVA MEDEIROS', cargo:'Colaboradora' },
+  { id:'EMP010', nome:'THAYLLON SALAZAR RAMOS BERNARDINO',   cargo:'Colaborador'  },
+  { id:'EMP011', nome:'PABLO ANDERSON MODESTO JUVENAL',      cargo:'Colaborador'  },
+];
+function carregarFuncionarios() {
+  const raw = localStorage.getItem('bambam_funcionarios');
+  if (!raw) { localStorage.setItem('bambam_funcionarios', JSON.stringify(PADRAO_FUNCIONARIOS)); return PADRAO_FUNCIONARIOS; }
+  return JSON.parse(raw);
+}
+const LISTA_FUNC = carregarFuncionarios();
+const FUNCIONARIOS = {};
+LISTA_FUNC.forEach(f => { FUNCIONARIOS[f.id] = f.nome; });
+
+const ACOES = ["Entrada","Saída Almoço","Retorno Almoço","Saída Extra","Retorno Extra","Saída Final"];
+
+// ════════════════════════════════════════════
+// UTILIDADES
+// ════════════════════════════════════════════
+function hoje() {
+  return new Date().toLocaleDateString('pt-BR');
+}
+function agora() {
+  return new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+
+function getRegistros() {
+  return JSON.parse(localStorage.getItem('bambam_registros') || '[]');
+}
+function salvarRegistros(r) {
+  localStorage.setItem('bambam_registros', JSON.stringify(r));
+}
+
+// ════════════════════════════════════════════
+// RELÓGIO
+// ════════════════════════════════════════════
+function atualizarRelogio() {
+  const now = new Date();
+  document.getElementById('clock').textContent = now.toLocaleTimeString('pt-BR');
+  document.getElementById('date-str').textContent =
+    now.toLocaleDateString('pt-BR',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+}
+setInterval(atualizarRelogio, 1000);
+atualizarRelogio();
+
+// ════════════════════════════════════════════
+// VERIFICAÇÃO WI-FI via API pública de IP
+// ════════════════════════════════════════════
+async function verificarWifi() {
+  const badge = document.getElementById('wifi-badge');
+  
+  // Se não há filtro configurado, libera tudo
+  if (COMPANY_WIFI_IPS.length === 0) {
+    badge.textContent = '✅ Rede liberada';
+    badge.style.background = '#98C37944';
+    iniciarScanner();
+    return;
+  }
+
+  try {
+    const r = await fetch('https://api.ipify.org?format=json');
+    const data = await r.json();
+    const ip = data.ip;
+    const permitido = COMPANY_WIFI_IPS.some(prefix => ip.startsWith(prefix));
+    if (permitido) {
+      badge.textContent = '✅ Wi-Fi empresa';
+      badge.style.background = '#98C37944';
+      iniciarScanner();
+    } else {
+      badge.textContent = '❌ Rede não autorizada';
+      document.getElementById('app').style.display = 'none';
+      document.getElementById('wifi-block').style.display = 'block';
+    }
+  } catch(e) {
+    // fallback: se não conseguir checar, libera (rede interna sem internet)
+    badge.textContent = '✅ Rede local';
+    iniciarScanner();
+  }
+}
+
+// ════════════════════════════════════════════
+// SCANNER QR
+// ════════════════════════════════════════════
+let scannerAtivo = false;
+let bloqueado = false;
+
+function iniciarScanner() {
+  if (scannerAtivo) return;
+  scannerAtivo = true;
+  const html5QrCode = new Html5Qrcode("reader");
+  html5QrCode.start(
+    { facingMode: "environment" },
+    { fps: 10, qrbox: { width: 230, height: 230 } },
+    onScanSuccess,
+    () => {}
+  ).catch(err => {
+    document.getElementById('reader').innerHTML =
+      '<p style="color:var(--sub);padding:20px;text-align:center">Câmera não disponível.<br>Use HTTPS para habilitar.</p>';
+  });
+}
+
+function onScanSuccess(decodedText) {
+  if (bloqueado) return;
+  bloqueado = true;
+  registrarPonto(decodedText);
+  setTimeout(() => { bloqueado = false; }, 3000);
+}
+
+// ════════════════════════════════════════════
+// REGISTRO DE PONTO
+// ════════════════════════════════════════════
+function registrarPonto(codigo) {
+  const nome = FUNCIONARIOS[codigo];
+  const statusBox = document.getElementById('status-box');
+
+  if (!nome) {
+    statusBox.className = 'error';
+    statusBox.style.display = 'block';
+    statusBox.innerHTML = `<div style="font-size:2rem">❌</div><div class="emp-name" style="color:#ff4d6d">QR Code inválido</div><div class="action">Crachá não reconhecido</div>`;
+    setTimeout(() => { statusBox.style.display = 'none'; }, 3000);
+    return;
+  }
+
+  const registros = getRegistros();
+  const dataHoje = hoje();
+  const horaAgora = agora();
+
+  // Encontra ou cria linha do dia para este funcionário
+  let entrada = registros.find(r => r.data === dataHoje && r.id === codigo);
+  if (!entrada) {
+    entrada = {
+      id: codigo,
+      nome: nome,
+      data: dataHoje,
+      Entrada: '',
+      'Saída Almoço': '',
+      'Retorno Almoço': '',
+      'Saída Extra': '',
+      'Retorno Extra': '',
+      'Saída Final': ''
+    };
+    registros.push(entrada);
+  }
+
+  // Determina próxima ação
+  let acao = null;
+  for (const a of ACOES) {
+    if (!entrada[a]) { acao = a; break; }
+  }
+
+  if (!acao) {
+    statusBox.className = 'error';
+    statusBox.style.display = 'block';
+    statusBox.innerHTML = `<div style="font-size:2rem">⚠️</div><div class="emp-name">${nome}</div><div class="action">Todos os registros do dia já foram feitos!</div>`;
+    setTimeout(() => { statusBox.style.display = 'none'; }, 4000);
+    return;
+  }
+
+  entrada[acao] = horaAgora;
+  salvarRegistros(registros);
+  atualizarLog();
+
+  const emoji = {
+    'Entrada':'🟢','Saída Almoço':'🍽️','Retorno Almoço':'🔵',
+    'Saída Extra':'🟡','Retorno Extra':'🟣','Saída Final':'🔴'
+  }[acao] || '✅';
+
+  statusBox.className = 'success';
+  statusBox.style.display = 'block';
+  statusBox.innerHTML = `
+    <div style="font-size:2.2rem">${emoji}</div>
+    <div class="emp-name">${nome}</div>
+    <div class="action">${acao} registrada</div>
+    <div class="time">${horaAgora}</div>
+  `;
+
+  // Vibração no celular
+  if (navigator.vibrate) navigator.vibrate([80,40,80]);
+
+  setTimeout(() => { statusBox.style.display = 'none'; }, 5000);
+}
+
+// ════════════════════════════════════════════
+// LOG DO DIA
+// ════════════════════════════════════════════
+function atualizarLog() {
+  const registros = getRegistros();
+  const dataHoje = hoje();
+  const hoje_regs = registros.filter(r => r.data === dataHoje);
+  const list = document.getElementById('log-list');
+
+  if (hoje_regs.length === 0) {
+    list.innerHTML = '<li style="color:var(--sub);font-size:.85rem;padding:10px">Nenhum registro ainda.</li>';
+    return;
+  }
+
+  // Coleta todos os eventos do dia ordenados por hora
+  const eventos = [];
+  for (const reg of hoje_regs) {
+    for (const acao of ACOES) {
+      if (reg[acao]) eventos.push({ nome: reg.nome, acao, hora: reg[acao] });
+    }
+  }
+  eventos.sort((a,b) => a.hora.localeCompare(b.hora));
+  eventos.reverse();
+
+  list.innerHTML = eventos.slice(0,30).map(e => `
+    <li>
+      <span class="log-name">${e.nome.split(' ')[0]}</span>
+      <span class="log-action">${e.acao}</span>
+      <span class="log-time">${e.hora}</span>
+    </li>
+  `).join('');
+}
+
+// ════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════
+verificarWifi();
+atualizarLog();
+</script>
+</body>
+</html>
