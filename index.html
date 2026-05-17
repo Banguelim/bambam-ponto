@@ -1,13 +1,4 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="BamBam Ponto">
-<meta name="theme-color" content="#DB2777">{
+{
   "name": "BAMBAM BABY – Ponto",
   "short_name": "BamBam Ponto",
   "description": "Sistema de registro de ponto BAMBAM BABY",
@@ -30,15 +21,20 @@
   ]
 }
 
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="BamBam Ponto">
+<meta name="theme-color" content="#DB2777">
 <title>BAMBAM BABY – Ponto</title>
-
-<!-- Ícone para área de trabalho -->
 <link rel="apple-touch-icon" href="icon.png">
 <link rel="icon" type="image/png" href="icon.png">
-
-<!-- Manifest PWA -->
 <link rel="manifest" href="manifest.json">
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;900&family=Baloo+2:wght@700;800&display=swap');
@@ -49,48 +45,36 @@
 }
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;align-items:center;}
-
 header{width:100%;background:linear-gradient(135deg,#C678DD,#FF6B9D);padding:18px 24px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 4px 20px #FF6B9D55;}
 header h1{font-family:'Baloo 2',cursive;font-size:1.5rem;color:#fff;text-shadow:0 2px 8px #0005;}
 .badge{background:#fff3;border:1.5px solid #fff6;border-radius:30px;padding:4px 14px;font-size:.78rem;font-weight:700;color:#fff;}
-
 #app{width:92%;max-width:480px;margin:24px auto 80px;display:flex;flex-direction:column;gap:18px;}
 .card{background:var(--card);border-radius:var(--radius);padding:20px;box-shadow:0 4px 24px #0004;border:1px solid #ffffff0f;}
 .card h2{font-family:'Baloo 2',cursive;font-size:1.05rem;color:var(--rosa);margin-bottom:12px;display:flex;align-items:center;gap:8px;}
-
 #clock{text-align:center;font-size:2.2rem;font-weight:900;font-family:'Baloo 2',cursive;color:var(--azul);letter-spacing:2px;}
 #date-str{text-align:center;font-size:.82rem;color:var(--sub);margin-top:2px;}
-
 #reader{border-radius:12px;overflow:hidden;background:#000;min-height:220px;}
 #reader video{border-radius:12px;}
-
 #log-list{list-style:none;display:flex;flex-direction:column;gap:7px;max-height:200px;overflow-y:auto;}
 #log-list li{background:var(--card2);border-radius:10px;padding:9px 13px;font-size:.8rem;display:flex;justify-content:space-between;align-items:center;gap:8px;}
 #log-list li .log-name{font-weight:700;flex:1;}
 #log-list li .log-action{color:var(--sub);font-size:.75rem;}
 #log-list li .log-time{color:var(--amarelo);font-weight:700;white-space:nowrap;}
-
 #admin-btn{position:fixed;bottom:20px;right:20px;background:var(--card2);border:1.5px solid var(--roxo);border-radius:50px;padding:10px 18px;color:var(--roxo);font-weight:700;font-size:.82rem;cursor:pointer;box-shadow:0 4px 16px #0006;transition:background .2s;}
 #admin-btn:hover{background:var(--roxo);color:#fff;}
-
-/* MODAL */
 .modal-overlay{display:none;position:fixed;inset:0;background:#000a;z-index:200;align-items:center;justify-content:center;padding:20px;}
 .modal-overlay.open{display:flex;}
 .modal{background:var(--card);border:1.5px solid #ffffff15;border-radius:22px;padding:26px;width:100%;max-width:360px;box-shadow:0 20px 60px #0008;animation:popIn .25s ease;text-align:center;}
 @keyframes popIn{from{transform:scale(.88);opacity:0}to{transform:scale(1);opacity:1}}
-
 .emp-avatar{width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#C678DD,#FF6B9D);margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:900;color:#fff;}
 .emp-nome{font-size:1rem;font-weight:900;margin-bottom:3px;}
 .emp-cargo{font-size:.75rem;color:var(--sub);margin-bottom:16px;}
-
 .ultimo-box{border-radius:11px;padding:11px 14px;margin-bottom:18px;font-size:.82rem;font-weight:600;line-height:1.7;}
 .ultimo-entrada{background:#98C37922;border:1.5px solid var(--verde);color:var(--verde);}
 .ultimo-saida{background:#E5C07B22;border:1.5px solid var(--amarelo);color:var(--amarelo);}
 .ultimo-nenhum{background:#ffffff0a;border:1.5px solid #ffffff15;color:var(--sub);}
 .ultimo-box strong{font-size:.92rem;display:block;margin-top:3px;}
-
 .pergunta{font-size:.9rem;font-weight:700;margin-bottom:14px;}
-
 .escolha-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
 .btn-escolha{padding:16px 10px;border-radius:13px;border:2px solid transparent;font-family:'Nunito',sans-serif;font-size:.88rem;font-weight:800;cursor:pointer;transition:.15s;text-align:center;line-height:1.5;}
 .btn-escolha:hover{transform:translateY(-2px);}
@@ -99,18 +83,15 @@ header h1{font-family:'Baloo 2',cursive;font-size:1.5rem;color:#fff;text-shadow:
 .btn-e:hover{background:#98C37944;}
 .btn-s{background:#FF6B9D22;border-color:var(--rosa);color:var(--rosa);}
 .btn-s:hover{background:#FF6B9D44;}
-
 .confirma-box{border-radius:11px;padding:14px;margin-bottom:16px;font-size:.88rem;font-weight:700;line-height:1.7;}
 .confirma-entrada{background:#98C37922;border:2px solid var(--verde);color:var(--verde);}
 .confirma-saida{background:#FF6B9D22;border:2px solid var(--rosa);color:var(--rosa);}
-
 .btn{display:block;width:100%;padding:13px;border:none;border-radius:12px;font-family:'Nunito',sans-serif;font-size:.95rem;font-weight:800;cursor:pointer;transition:.15s;margin-bottom:9px;}
 .btn:active{transform:scale(.97);}
 .btn-verde-solid{background:linear-gradient(90deg,#56d275,#98C379);color:#fff;}
 .btn-rosa-solid{background:linear-gradient(90deg,#FF6B9D,#C678DD);color:#fff;}
 .btn-cancelar{background:#ffffff0f;color:var(--sub);border:1.5px solid #ffffff15;}
 .btn-voltar{background:#ffffff0f;color:var(--sub);font-size:.8rem;padding:9px;margin-bottom:0;}
-
 ::-webkit-scrollbar{width:4px;}
 ::-webkit-scrollbar-thumb{background:#ffffff22;border-radius:99px;}
 </style>
@@ -139,7 +120,6 @@ header h1{font-family:'Baloo 2',cursive;font-size:1.5rem;color:#fff;text-shadow:
 
 <button id="admin-btn" onclick="location.href='admin.html'">⚙️ Admin</button>
 
-<!-- MODAL -->
 <div class="modal-overlay" id="modal">
   <div class="modal">
     <div id="step1">
@@ -199,7 +179,6 @@ let funcionarios={}, logHoje=[], funcSel=null, tipoEsc=null, bloqueado=false;
 function dataHoje(){return new Date().toISOString().split('T')[0];}
 function iniciais(n){const p=n.trim().split(' ');return(p[0][0]+(p[1]?.[0]||'')).toUpperCase();}
 
-// RELÓGIO
 function tick(){
   const now=new Date();
   document.getElementById('clock').textContent=now.toLocaleTimeString('pt-BR');
@@ -207,17 +186,14 @@ function tick(){
 }
 tick(); setInterval(tick,1000);
 
-// BADGE CONEXÃO
 document.getElementById('wifi-badge').textContent='✅ Online';
 
-// FUNCIONÁRIOS
 onValue(ref(db,'funcionarios'),snap=>{
   const d=snap.val(); funcionarios={};
   if(d){Object.values(d).forEach(f=>{funcionarios[f.id]=f;});}
   else{PADRAO.forEach(f=>{funcionarios[f.id]=f;set(ref(db,'funcionarios/'+f.id),f);});}
 });
 
-// LOG HOJE
 onValue(ref(db,'registros/'+dataHoje()),snap=>{
   logHoje=[]; const d=snap.val();
   if(d) logHoje=Object.values(d);
@@ -235,7 +211,6 @@ function renderLog(){
     </li>`).join('');
 }
 
-// SCANNER
 let scannerAtivo=false;
 function iniciarScanner(){
   if(scannerAtivo) return; scannerAtivo=true;
@@ -249,7 +224,6 @@ function iniciarScanner(){
 }
 iniciarScanner();
 
-// ÚLTIMO REGISTRO
 async function buscarUltimo(empId){
   const hoje=new Date();
   for(let i=0;i<7;i++){
@@ -262,7 +236,6 @@ async function buscarUltimo(empId){
   return null;
 }
 
-// ABRIR MODAL
 window.abrirModal=async function(empId){
   const f=funcionarios[empId];
   if(!f){mostrarToast('❌ Crachá não reconhecido no sistema.','#ff4d6d');return;}
@@ -307,7 +280,7 @@ window.confirmarPonto=async function(){
     await push(ref(db,'registros/'+dataHoje()),reg);
     if(navigator.vibrate) navigator.vibrate([80,40,80]);
     fecharModal();
-    mostrarToast(tipoEsc==='entrada'?`✅ Boa chegada, ${f.nome.split(' ')[0]}!`:`👋 Até logo, ${f.nome.split(' ')[0]}!`, tipoEsc==='entrada'?'#98C379':'#FF6B9D');
+    mostrarToast(tipoEsc==='entrada'?`✅ Boa chegada, ${f.nome.split(' ')[0]}!`:`👋 Até logo, ${f.nome.split(' ')[0]}!`,tipoEsc==='entrada'?'#98C379':'#FF6B9D');
   }catch(e){alert('❌ Erro ao registrar. Verifique a conexão.');}
 }
 
