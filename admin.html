@@ -29,7 +29,7 @@ header p  { font-size:.75rem; color:var(--sub); margin-top:2px; }
 .tab-btn:hover { color:var(--rosa-d); }
 .tab-btn.active { color:var(--rosa-d); border-bottom-color:var(--rosa-d); }
 
-main { max-width:1000px; margin:0 auto; padding:28px 18px 80px; }
+main { max-width:1100px; margin:0 auto; padding:28px 18px 80px; }
 .tab-content { display:none; }
 .tab-content.active { display:block; }
 
@@ -45,9 +45,33 @@ main { max-width:1000px; margin:0 auto; padding:28px 18px 80px; }
 .tabela-wrap { overflow-x:auto; }
 table { width:100%; border-collapse:collapse; font-size:.82rem; }
 th { background:var(--cinza); padding:10px 14px; text-align:left; font-size:.72rem; text-transform:uppercase; letter-spacing:.6px; color:var(--sub); border-bottom:2px solid var(--borda); white-space:nowrap; }
-td { padding:12px 14px; border-bottom:1px solid var(--borda); white-space:nowrap; }
+td { padding:10px 14px; border-bottom:1px solid var(--borda); white-space:nowrap; }
 tr:last-child td { border-bottom:none; }
 tr:hover td { background:#FAFAFA; }
+
+/* OCORRÊNCIA SELECT */
+.ocorrencia-sel {
+  padding: 5px 10px;
+  border: 1.5px solid var(--borda);
+  border-radius: 8px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: .75rem;
+  font-weight: 700;
+  cursor: pointer;
+  background: var(--cinza);
+  color: var(--texto);
+  transition: border-color .2s;
+  min-width: 130px;
+}
+.ocorrencia-sel:focus { outline: none; border-color: var(--rosa); }
+.ocorrencia-sel.normal    { background:#F0FDF4; color:#15803D; border-color:#86EFAC; }
+.ocorrencia-sel.ferias    { background:#EFF6FF; color:#1D4ED8; border-color:#93C5FD; }
+.ocorrencia-sel.doenca    { background:#FEF3C7; color:#92400E; border-color:#FCD34D; }
+.ocorrencia-sel.falta     { background:#FEE2E2; color:var(--vermelho); border-color:#FCA5A5; }
+.ocorrencia-sel.outro     { background:#F3F4F6; color:var(--sub); border-color:var(--borda); }
+
+td.hora { font-family:monospace; font-size:.85rem; font-weight:700; color:var(--texto); }
+td.vazio { color:#D1D5DB; font-style:italic; }
 
 .badge { display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:20px; font-size:.7rem; font-weight:700; }
 .badge-entrada { background:#F0FDF4; color:var(--verde); border:1px solid #86EFAC; }
@@ -64,13 +88,8 @@ tr:hover td { background:#FAFAFA; }
 .filtro-field input[type=date]:focus { outline:none; border-color:var(--rosa); }
 .filtro-acoes { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
 
-.resumo-bar { display:none; background:#F0FDF4; border:1.5px solid #86EFAC; border-radius:10px; padding:12px 16px; margin-bottom:16px; font-size:.82rem; font-weight:600; color:var(--verde); flex-wrap:wrap; gap:16px; align-items:center; }
+.resumo-bar { background:#F0FDF4; border:1.5px solid #86EFAC; border-radius:10px; padding:12px 16px; margin-bottom:16px; font-size:.82rem; font-weight:600; color:var(--verde); display:flex; flex-wrap:wrap; gap:16px; align-items:center; }
 .resumo-bar span strong { color:var(--texto); }
-
-/* TABELA CONSOLIDADA */
-.tabela-consolidada th { background:#F3F4F6; }
-.tabela-consolidada td.vazio { color:#D1D5DB; font-style:italic; }
-.tabela-consolidada td.hora { font-family:monospace; font-size:.85rem; font-weight:700; }
 
 .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
 @media(max-width:560px){.form-grid{grid-template-columns:1fr}}
@@ -118,7 +137,8 @@ tr:hover td { background:#FAFAFA; }
 .spinner { width:32px; height:32px; border:3px solid var(--borda); border-top-color:var(--rosa); border-radius:50%; animation:spin .7s linear infinite; margin:0 auto 12px; }
 @keyframes spin{to{transform:rotate(360deg)}}
 
-.info-excel { background:#EFF6FF; border:1.5px solid #93C5FD; border-radius:10px; padding:12px 16px; font-size:.78rem; color:#1D4ED8; font-weight:600; margin-top:14px; line-height:1.6; }
+.salvo-badge { display:inline-block; background:#F0FDF4; color:#15803D; border:1px solid #86EFAC; border-radius:20px; padding:2px 10px; font-size:.68rem; font-weight:700; margin-left:8px; animation: fadeOut 2s forwards; }
+@keyframes fadeOut { 0%{opacity:1} 70%{opacity:1} 100%{opacity:0} }
 </style>
 </head>
 <body>
@@ -177,15 +197,12 @@ tr:hover td { background:#FAFAFA; }
         <button class="btn btn-cinza btn-sm" onclick="definirSemana()">Esta semana</button>
         <button class="btn btn-cinza btn-sm" onclick="definirMes()">Este mês</button>
       </div>
-      <div class="info-excel">
-        💡 O Excel exportado terá <strong>uma linha por funcionário por dia</strong>, com colunas: Entrada, S. Almoço, V. Almoço, Saída e uma coluna <strong>Ocorrência</strong> com lista suspensa: Normal, Férias, Af. Doença, Falta, Outro.
-      </div>
     </div>
 
-    <div id="resumo-periodo" style="display:none;display:flex" class="resumo-bar"></div>
+    <div id="resumo-periodo" style="display:none" class="resumo-bar"></div>
 
     <div class="card">
-      <h2>📋 Registros do período — visão consolidada</h2>
+      <h2>📋 Registros do período</h2>
       <div id="registros-container">
         <div class="empty"><div class="icon">🗓️</div>Selecione um período acima para ver os registros.</div>
       </div>
@@ -322,61 +339,82 @@ function renderUltimosRegistros(lista) {
     <tr><td><strong>${r.nome}</strong></td><td><span class="badge badge-${r.tipo}">${r.tipo==='entrada'?'✅ Entrada':'🚪 Saída'}</span></td><td>${r.hora}</td></tr>`).join('');
 }
 
-// ── ATALHOS DE PERÍODO ──
-window.definirHoje    = function(){ const h=dataHoje(); document.getElementById('data-inicio').value=h; document.getElementById('data-fim').value=h; }
-window.definirSemana  = function(){ const hoje=new Date(),dia=hoje.getDay(),seg=new Date(hoje); seg.setDate(hoje.getDate()-(dia===0?6:dia-1)); document.getElementById('data-inicio').value=seg.toISOString().split('T')[0]; document.getElementById('data-fim').value=dataHoje(); }
-window.definirMes     = function(){ const hoje=new Date(),ini=new Date(hoje.getFullYear(),hoje.getMonth(),1); document.getElementById('data-inicio').value=ini.toISOString().split('T')[0]; document.getElementById('data-fim').value=dataHoje(); }
+// ── ATALHOS ──
+window.definirHoje   = function(){ const h=dataHoje(); document.getElementById('data-inicio').value=h; document.getElementById('data-fim').value=h; }
+window.definirSemana = function(){ const hoje=new Date(),dia=hoje.getDay(),seg=new Date(hoje); seg.setDate(hoje.getDate()-(dia===0?6:dia-1)); document.getElementById('data-inicio').value=seg.toISOString().split('T')[0]; document.getElementById('data-fim').value=dataHoje(); }
+window.definirMes    = function(){ const hoje=new Date(),ini=new Date(hoje.getFullYear(),hoje.getMonth(),1); document.getElementById('data-inicio').value=ini.toISOString().split('T')[0]; document.getElementById('data-fim').value=dataHoje(); }
 
-// ── CONSOLIDAR REGISTROS POR FUNCIONÁRIO/DIA ──
-// Pega todos os registros de um dia e organiza:
-// 1ª entrada = Entrada, 1ª saída = S.Almoço, 2ª entrada = V.Almoço, 2ª saída = Saída Final
-function consolidar(registrosBrutos) {
-  // Agrupa por empId + data
+// ── CONSOLIDAR ──
+function consolidar(brutos) {
   const mapa = {};
-  registrosBrutos.forEach(r => {
-    const chave = r.empId + '|' + r.data;
-    if (!mapa[chave]) mapa[chave] = { empId:r.empId, nome:r.nome, cargo:r.cargo||'', data:r.data, entradas:[], saidas:[] };
-    if (r.tipo === 'entrada') mapa[chave].entradas.push(r.hora);
-    else                      mapa[chave].saidas.push(r.hora);
+  brutos.forEach(r => {
+    const chave = r.empId+'|'+r.data;
+    if (!mapa[chave]) mapa[chave] = {empId:r.empId,nome:r.nome,cargo:r.cargo||'',data:r.data,entradas:[],saidas:[]};
+    if (r.tipo==='entrada') mapa[chave].entradas.push(r.hora);
+    else                    mapa[chave].saidas.push(r.hora);
   });
-
-  // Ordena horários e monta linha consolidada
   return Object.values(mapa).map(g => {
     g.entradas.sort(); g.saidas.sort();
-    return {
-      empId:    g.empId,
-      nome:     g.nome,
-      cargo:    g.cargo,
-      data:     g.data,
-      entrada:  g.entradas[0] || '',   // 1ª entrada
-      sAlmoco:  g.saidas[0]   || '',   // 1ª saída
-      vAlmoco:  g.entradas[1] || '',   // 2ª entrada
-      saida:    g.saidas[1]   || '',   // 2ª saída
-    };
-  }).sort((a,b) => a.data!==b.data ? a.data.localeCompare(b.data) : a.nome.localeCompare(b.nome));
+    return { empId:g.empId, nome:g.nome, cargo:g.cargo, data:g.data,
+      entrada:g.entradas[0]||'', sAlmoco:g.saidas[0]||'',
+      vAlmoco:g.entradas[1]||'', saida:g.saidas[1]||'' };
+  }).sort((a,b)=>a.data!==b.data?a.data.localeCompare(b.data):a.nome.localeCompare(b.nome));
+}
+
+// ── CHAVE OCORRÊNCIA NO FIREBASE ──
+function chaveOcorrencia(empId, data) {
+  return 'ocorrencias/' + data + '/' + empId;
+}
+
+// ── SALVAR OCORRÊNCIA ──
+window.salvarOcorrencia = async function(empId, data, valor, selEl) {
+  // Atualiza cor do select
+  atualizarCorSelect(selEl, valor);
+  await set(ref(db, chaveOcorrencia(empId, data)), valor);
+  // Mostra "Salvo!" ao lado
+  let badge = selEl.parentElement.querySelector('.salvo-badge');
+  if (badge) badge.remove();
+  badge = document.createElement('span');
+  badge.className = 'salvo-badge';
+  badge.textContent = '✓ Salvo';
+  selEl.parentElement.appendChild(badge);
+  setTimeout(()=>{ if(badge.parentElement) badge.remove(); }, 2000);
+}
+
+function atualizarCorSelect(el, valor) {
+  el.className = 'ocorrencia-sel';
+  const mapa = {'Normal':'normal','Férias':'ferias','Af. Doença':'doenca','Falta':'falta','Outro':'outro'};
+  if (mapa[valor]) el.classList.add(mapa[valor]);
 }
 
 // ── CARREGAR PERÍODO ──
 window.carregarPeriodo = async function() {
   const inicio = document.getElementById('data-inicio').value;
   const fim    = document.getElementById('data-fim').value;
-  if (!inicio || !fim) { alert('⚠️ Selecione a data inicial e final.'); return; }
-  if (inicio > fim)    { alert('⚠️ A data inicial não pode ser maior que a final.'); return; }
+  if (!inicio||!fim) { alert('⚠️ Selecione a data inicial e final.'); return; }
+  if (inicio>fim)    { alert('⚠️ A data inicial não pode ser maior que a final.'); return; }
 
   document.getElementById('registros-container').innerHTML = `<div class="loading-tab"><div class="spinner"></div>Buscando registros…</div>`;
 
   const datas = [];
-  const cur = new Date(inicio+'T12:00:00');
-  const end = new Date(fim+'T12:00:00');
-  while (cur <= end) { datas.push(cur.toISOString().split('T')[0]); cur.setDate(cur.getDate()+1); }
+  const cur = new Date(inicio+'T12:00:00'), end = new Date(fim+'T12:00:00');
+  while (cur<=end) { datas.push(cur.toISOString().split('T')[0]); cur.setDate(cur.getDate()+1); }
+
+  // Busca registros e ocorrências em paralelo
+  const [snapsReg, snapsOc] = await Promise.all([
+    Promise.all(datas.map(d=>get(ref(db,'registros/'+d)))),
+    Promise.all(datas.map(d=>get(ref(db,'ocorrencias/'+d))))
+  ]);
 
   const brutos = [];
-  const snaps = await Promise.all(datas.map(d=>get(ref(db,'registros/'+d))));
-  snaps.forEach(snap => { const v=snap.val(); if(v) brutos.push(...Object.values(v)); });
+  snapsReg.forEach(s=>{ const v=s.val(); if(v) brutos.push(...Object.values(v)); });
 
-  dadosConsolidados = consolidar(brutos);
+  // Monta mapa de ocorrências empId|data → valor
+  const ocMap = {};
+  snapsOc.forEach((s,i)=>{ const v=s.val(); if(v) Object.entries(v).forEach(([empId,oc])=>{ ocMap[empId+'|'+datas[i]]=oc; }); });
 
-  // Resumo
+  dadosConsolidados = consolidar(brutos).map(r=>({ ...r, ocorrencia: ocMap[r.empId+'|'+r.data]||'Normal' }));
+
   const resumo = document.getElementById('resumo-periodo');
   resumo.style.display = 'flex';
   resumo.innerHTML = `
@@ -389,92 +427,64 @@ window.carregarPeriodo = async function() {
     return;
   }
 
-  // Tabela consolidada na tela
+  // Monta tabela com select de ocorrência em cada linha
+  const linhas = dadosConsolidados.map(r => {
+    const opcoes = ['Normal','Férias','Af. Doença','Falta','Outro'];
+    const classeSel = {Normal:'normal',Férias:'ferias','Af. Doença':'doenca',Falta:'falta',Outro:'outro'}[r.ocorrencia]||'normal';
+    const opcoesHtml = opcoes.map(o=>`<option value="${o}" ${o===r.ocorrencia?'selected':''}>${o}</option>`).join('');
+    return `<tr>
+      <td>${r.empId}</td>
+      <td><strong>${r.nome}</strong></td>
+      <td>${formatarData(r.data)}</td>
+      <td class="${r.entrada?'hora':'vazio'}">${r.entrada||'—'}</td>
+      <td class="${r.sAlmoco?'hora':'vazio'}">${r.sAlmoco||'—'}</td>
+      <td class="${r.vAlmoco?'hora':'vazio'}">${r.vAlmoco||'—'}</td>
+      <td class="${r.saida?'hora':'vazio'}">${r.saida||'—'}</td>
+      <td style="min-width:160px">
+        <select class="ocorrencia-sel ${classeSel}"
+          onchange="salvarOcorrencia('${r.empId}','${r.data}',this.value,this)"
+          title="Clique para alterar a ocorrência">
+          ${opcoesHtml}
+        </select>
+      </td>
+    </tr>`;
+  }).join('');
+
   document.getElementById('registros-container').innerHTML = `
     <div class="tabela-wrap">
-      <table class="tabela-consolidada">
-        <thead>
-          <tr>
-            <th>ID</th><th>Funcionário</th><th>Data</th>
-            <th>Entrada</th><th>S. Almoço</th><th>V. Almoço</th><th>Saída</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${dadosConsolidados.map(r=>`
-            <tr>
-              <td>${r.empId}</td>
-              <td><strong>${r.nome}</strong></td>
-              <td>${formatarData(r.data)}</td>
-              <td class="${r.entrada?'hora':'vazio'}">${r.entrada||'—'}</td>
-              <td class="${r.sAlmoco?'hora':'vazio'}">${r.sAlmoco||'—'}</td>
-              <td class="${r.vAlmoco?'hora':'vazio'}">${r.vAlmoco||'—'}</td>
-              <td class="${r.saida?'hora':'vazio'}">${r.saida||'—'}</td>
-            </tr>`).join('')}
-        </tbody>
+      <table>
+        <thead><tr>
+          <th>ID</th><th>Funcionário</th><th>Data</th>
+          <th>Entrada</th><th>S. Almoço</th><th>V. Almoço</th><th>Saída</th>
+          <th>Ocorrência ✏️</th>
+        </tr></thead>
+        <tbody>${linhas}</tbody>
       </table>
     </div>`;
 }
 
-// ── EXPORTAR EXCEL COM LISTA SUSPENSA ──
+// ── EXPORTAR EXCEL ──
 window.exportarExcel = function() {
   const inicio = document.getElementById('data-inicio').value;
   const fim    = document.getElementById('data-fim').value;
-  if (!inicio || !fim) { alert('⚠️ Selecione o período e clique em Buscar primeiro.'); return; }
-  if (!dadosConsolidados.length) { alert('⚠️ Nenhum registro para exportar. Clique em Buscar primeiro.'); return; }
+  if (!inicio||!fim) { alert('⚠️ Selecione o período e clique em Buscar primeiro.'); return; }
+  if (!dadosConsolidados.length) { alert('⚠️ Nenhum registro. Clique em Buscar primeiro.'); return; }
+
+  // Pega ocorrências atuais dos selects da tela (caso tenham sido alteradas)
+  const selects = document.querySelectorAll('.ocorrencia-sel');
+  selects.forEach((sel,i)=>{ if(dadosConsolidados[i]) dadosConsolidados[i].ocorrencia = sel.value; });
+
+  const cab = ['ID','Funcionário','Cargo','Data','Entrada','S. Almoço','V. Almoço','Saída','Ocorrência'];
+  const linhas = [cab];
+  dadosConsolidados.forEach(r=>{
+    linhas.push([r.empId,r.nome,r.cargo,formatarData(r.data),r.entrada,r.sAlmoco,r.vAlmoco,r.saida,r.ocorrencia]);
+  });
 
   const wb = XLSX.utils.book_new();
-
-  // ── Cabeçalho e dados ──
-  const cabecalho = ['ID','Funcionário','Cargo','Data','Entrada','S. Almoço','V. Almoço','Saída','Ocorrência'];
-  const linhas = [cabecalho];
-  dadosConsolidados.forEach(r => {
-    linhas.push([
-      r.empId, r.nome, r.cargo, formatarData(r.data),
-      r.entrada, r.sAlmoco, r.vAlmoco, r.saida,
-      'Normal' // valor padrão da coluna Ocorrência
-    ]);
-  });
-
   const ws = XLSX.utils.aoa_to_sheet(linhas);
-
-  // ── Largura das colunas ──
-  ws['!cols'] = [
-    {wch:8},{wch:36},{wch:16},{wch:12},
-    {wch:10},{wch:10},{wch:10},{wch:10},{wch:14}
-  ];
-
-  // ── Lista suspensa na coluna Ocorrência (coluna I = índice 8) ──
-  const ocorrencias = '"Normal,Férias,Af. Doença,Falta,Outro"';
-  if (!ws['!dataValidation']) ws['!dataValidation'] = [];
-  for (let row = 1; row < linhas.length; row++) {
-    const cellRef = XLSX.utils.encode_cell({ r: row, c: 8 });
-    ws['!dataValidation'].push({
-      sqref: cellRef,
-      type: 'list',
-      formula1: ocorrencias,
-      showDropDown: false,
-      showErrorMessage: true,
-      errorTitle: 'Valor inválido',
-      error: 'Escolha uma das opções da lista.'
-    });
-  }
-
-  // ── Estilo do cabeçalho (negrito + cor) ──
-  cabecalho.forEach((_, c) => {
-    const cell = XLSX.utils.encode_cell({ r:0, c });
-    if (ws[cell]) {
-      ws[cell].s = {
-        font: { bold: true, color: { rgb: 'FFFFFF' } },
-        fill: { fgColor: { rgb: 'DB2777' } },
-        alignment: { horizontal: 'center' }
-      };
-    }
-  });
-
+  ws['!cols'] = [{wch:8},{wch:36},{wch:16},{wch:12},{wch:10},{wch:10},{wch:10},{wch:10},{wch:14}];
   XLSX.utils.book_append_sheet(wb, ws, 'Ponto');
-
-  const nomeArquivo = `Ponto_BAMBAM_${formatarData(inicio).replace(/\//g,'-')}_a_${formatarData(fim).replace(/\//g,'-')}.xlsx`;
-  XLSX.writeFile(wb, nomeArquivo);
+  XLSX.writeFile(wb, `Ponto_BAMBAM_${formatarData(inicio).replace(/\//g,'-')}_a_${formatarData(fim).replace(/\//g,'-')}.xlsx`);
   mostrarToast('📊 Excel exportado com sucesso!');
 }
 
