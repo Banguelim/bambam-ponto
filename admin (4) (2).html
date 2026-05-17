@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BAMBAM BABY – Admin</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&display=swap');
+:root {
+  --rosa: #F472B6; --rosa-d: #DB2777; --verde: #16A34A;
+  --cinza: #F8F8FA; --borda: #E5E7EB; --texto: #1F2937; --sub: #6B7280;
+  --vermelho: #DC2626; --azul: #3B82F6;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Montserrat', sans-serif; background: #F0F2F5; color: var(--texto); min-height: 100vh; }
+
+header { background:#fff; border-bottom:2px solid var(--borda); padding:16px 28px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+.logo-mark { width:44px; height:44px; background:linear-gradient(135deg,var(--rosa),var(--rosa-d)); border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1.4rem; }
+.header-left { display:flex; align-items:center; gap:14px; }
+header h1 { font-size:1.1rem; font-weight:900; }
+header p  { font-size:.75rem; color:var(--sub); margin-top:2px; }
+.live-badge { display:flex; align-items:center; gap:6px; background:#F0FDF4; border:1px solid #86EFAC; padding:6px 14px; border-radius:20px; font-size:.75rem; font-weight:700; color:var(--verde); }
+.live-dot { width:8px; height:8px; border-radius:50%; background:var(--verde); animation:pulse 1.5s infinite; }
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+.tabs { display:flex; gap:4px; background:#fff; border-bottom:2px solid var(--borda); padding:0 28px; overflow-x:auto; }
+.tab-btn { padding:14px 20px; border:none; background:none; cursor:pointer; font-family:'Montserrat',sans-serif; font-size:.85rem; font-weight:700; color:var(--sub); border-bottom:3px solid transparent; margin-bottom:-2px; white-space:nowrap; transition:.15s; }
+.tab-btn:hover { color:var(--rosa-d); }
+.tab-btn.active { color:var(--rosa-d); border-bottom-color:var(--rosa-d); }
+
+main { max-width:1100px; margin:0 auto; padding:28px 18px 80px; }
+.tab-content { display:none; }
+.tab-content.active { display:block; }
+
+.card { background:#fff; border-radius:16px; padding:24px; border:1.5px solid var(--borda); box-shadow:0 2px 12px #0001; margin-bottom:20px; }
+.card h2 { font-size:1rem; font-weight:800; margin-bottom:18px; display:flex; align-items:center; gap:8px; }
+
+.stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:14px; margin-bottom:20px; }
+.stat-card { background:#fff; border-radius:14px; padding:18px; border:1.5px solid var(--borda); text-align:center; }
+.stat-card .num { font-size:2rem; font-weight:900; }
+.stat-card .lbl { font-size:.72rem; color:var(--sub); font-weight:600; margin-top:4px; text-transform:uppercase; letter-spacing:.6px; }
+.stat-rosa .num{color:var(--rosa-d)} .stat-verde .num{color:var(--verde)} .stat-azul .num{color:var(--azul)} .stat-cinza .num{color:var(--sub)}
+
+.tabela-wrap { overflow-x:auto; }
+table { width:100%; border-collapse:collapse; font-size:.82rem; }
+th { background:var(--cinza); padding:10px 14px; text-align:left; font-size:.72rem; text-transform:uppercase; letter-spacing:.6px; color:var(--sub); border-bottom:2px solid var(--borda); white-space:nowrap; }
+td { padding:10px 14px; border-bottom:1px solid var(--borda); white-space:nowrap; }
+tr:last-child td { border-bottom:none; }
+tr:hover td { background:#FAFAFA; }
+
+/* OCORRÊNCIA SELECT */
+.ocorrencia-sel {
+  padding: 5px 10px;
+  border: 1.5px solid var(--borda);
+  border-radius: 8px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: .75rem;
+  font-weight: 700;
+  cursor: pointer;
+  background: var(--cinza);
+  color: var(--texto);
+  transition: border-color .2s;
+  min-width: 130px;
+}
+.ocorrencia-sel:focus { outline: none; border-color: var(--rosa); }
+.ocorrencia-sel.normal    { background:#F0FDF4; color:#15803D; border-color:#86EFAC; }
+.ocorrencia-sel.ferias    { background:#EFF6FF; color:#1D4ED8; border-color:#93C5FD; }
+.ocorrencia-sel.doenca    { background:#FEF3C7; color:#92400E; border-color:#FCD34D; }
+.ocorrencia-sel.falta     { background:#FEE2E2; color:var(--vermelho); border-color:#FCA5A5; }
+.ocorrencia-sel.outro     { background:#F3F4F6; color:var(--sub); border-color:var(--borda); }
+
+td.hora { font-family:monospace; font-size:.85rem; font-weight:700; color:var(--texto); }
+td.vazio { color:#D1D5DB; font-style:italic; }
+
+.badge { display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:20px; font-size:.7rem; font-weight:700; }
+.badge-entrada { background:#F0FDF4; color:var(--verde); border:1px solid #86EFAC; }
+.badge-saida   { background:#FFF0F6; color:var(--rosa-d); border:1px solid #FECDD3; }
+
+/* FILTRO */
+.filtro-periodo { background:var(--cinza); border-radius:12px; padding:18px; border:1.5px solid var(--borda); margin-bottom:20px; }
+.filtro-periodo h3 { font-size:.85rem; font-weight:800; margin-bottom:14px; }
+.filtro-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px; }
+@media(max-width:480px){.filtro-grid{grid-template-columns:1fr}}
+.filtro-field { display:flex; flex-direction:column; gap:5px; }
+.filtro-field label { font-size:.72rem; font-weight:700; color:var(--sub); text-transform:uppercase; letter-spacing:.6px; }
+.filtro-field input[type=date] { padding:10px 14px; border:1.5px solid var(--borda); border-radius:10px; font-family:'Montserrat',sans-serif; font-size:.88rem; background:#fff; color:var(--texto); width:100%; }
+.filtro-field input[type=date]:focus { outline:none; border-color:var(--rosa); }
+.filtro-acoes { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+
+.resumo-bar { background:#F0FDF4; border:1.5px solid #86EFAC; border-radius:10px; padding:12px 16px; margin-bottom:16px; font-size:.82rem; font-weight:600; color:var(--verde); display:flex; flex-wrap:wrap; gap:16px; align-items:center; }
+.resumo-bar span strong { color:var(--texto); }
+
+.form-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+@media(max-width:560px){.form-grid{grid-template-columns:1fr}}
+.field { display:flex; flex-direction:column; gap:5px; }
+.field label { font-size:.75rem; font-weight:700; color:var(--sub); text-transform:uppercase; letter-spacing:.8px; }
+.field input { padding:10px 14px; border:1.5px solid var(--borda); border-radius:10px; font-family:'Montserrat',sans-serif; font-size:.88rem; color:var(--texto); background:var(--cinza); transition:border-color .2s; }
+.field input:focus { outline:none; border-color:var(--rosa); background:#fff; }
+
+.btn { padding:11px 22px; border:none; border-radius:10px; font-family:'Montserrat',sans-serif; font-size:.88rem; font-weight:700; cursor:pointer; transition:.15s; display:inline-flex; align-items:center; gap:7px; }
+.btn:hover { opacity:.88; transform:translateY(-1px); }
+.btn-rosa   { background:linear-gradient(135deg,var(--rosa),var(--rosa-d)); color:#fff; box-shadow:0 4px 14px #F472B644; }
+.btn-verde  { background:#DCFCE7; color:var(--verde); border:1.5px solid #86EFAC; }
+.btn-perigo { background:#FEE2E2; color:var(--vermelho); border:1.5px solid #FCA5A5; }
+.btn-cinza  { background:#F3F4F6; color:var(--sub); }
+.btn-excel  { background:#217346; color:#fff; }
+.btn-sm { padding:7px 14px; font-size:.78rem; border-radius:8px; }
+
+.emp-list { display:flex; flex-direction:column; gap:10px; }
+.emp-row { display:flex; align-items:center; gap:14px; padding:14px 16px; border-radius:12px; border:1.5px solid var(--borda); background:var(--cinza); transition:border-color .2s; }
+.emp-row:hover { border-color:var(--rosa); background:#fff; }
+.emp-avatar { width:46px; height:46px; border-radius:50%; background:linear-gradient(135deg,#FFDCE8,#FFF0F6); border:2px solid var(--borda); flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:1rem; font-weight:900; color:var(--rosa-d); }
+.emp-info { flex:1; min-width:0; }
+.emp-info .nome { font-size:.88rem; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.emp-info .meta { font-size:.72rem; color:var(--sub); margin-top:2px; display:flex; gap:10px; flex-wrap:wrap; }
+.emp-actions { display:flex; gap:8px; flex-shrink:0; }
+.cargo-badge { display:inline-block; padding:2px 10px; border-radius:20px; font-size:.68rem; font-weight:700; background:#FFF0F6; color:var(--rosa-d); border:1px solid #FECDD3; }
+.status-presente { color:var(--verde)!important; font-weight:700; }
+
+.modal-overlay { display:none; position:fixed; inset:0; background:#0006; z-index:100; align-items:center; justify-content:center; padding:20px; }
+.modal-overlay.open { display:flex; }
+.modal { background:#fff; border-radius:18px; padding:28px; width:100%; max-width:480px; box-shadow:0 20px 60px #0003; animation:popIn .25s ease; }
+.modal h3 { font-size:1rem; font-weight:800; margin-bottom:20px; }
+@keyframes popIn{from{transform:scale(.92);opacity:0}to{transform:scale(1);opacity:1}}
+
+.search-wrap { position:relative; margin-bottom:16px; }
+.search-wrap input { width:100%; padding:10px 14px 10px 38px; border:1.5px solid var(--borda); border-radius:10px; font-family:'Montserrat',sans-serif; font-size:.88rem; background:var(--cinza); color:var(--texto); transition:border-color .2s; }
+.search-wrap input:focus { outline:none; border-color:var(--rosa); background:#fff; }
+.search-icon { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--sub); pointer-events:none; }
+
+.empty { text-align:center; padding:40px 20px; color:var(--sub); font-size:.9rem; }
+.empty .icon { font-size:2.5rem; margin-bottom:10px; }
+.counter { font-size:.8rem; color:var(--sub); font-weight:600; }
+.counter strong { color:var(--texto); }
+.loading-tab { text-align:center; padding:40px; color:var(--sub); }
+.spinner { width:32px; height:32px; border:3px solid var(--borda); border-top-color:var(--rosa); border-radius:50%; animation:spin .7s linear infinite; margin:0 auto 12px; }
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.salvo-badge { display:inline-block; background:#F0FDF4; color:#15803D; border:1px solid #86EFAC; border-radius:20px; padding:2px 10px; font-size:.68rem; font-weight:700; margin-left:8px; animation: fadeOut 2s forwards; }
+@keyframes fadeOut { 0%{opacity:1} 70%{opacity:1} 100%{opacity:0} }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <div class="logo-mark">🍼</div>
+    <div><h1>BAMBAM BABY – Admin</h1><p>Painel de controle do sistema de ponto</p></div>
+  </div>
+  <div class="live-badge"><div class="live-dot"></div> Ao vivo</div>
+</header>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="mudarTab('dashboard',this)">📊 Dashboard</button>
+  <button class="tab-btn" onclick="mudarTab('registros',this)">🕐 Registros</button>
+  <button class="tab-btn" onclick="mudarTab('funcionarios',this)">👥 Funcionários</button>
+</div>
+
+<main>
+
+  <!-- ═══ DASHBOARD ═══ -->
+  <div class="tab-content active" id="tab-dashboard">
+    <div class="stats-grid">
+      <div class="stat-card stat-rosa"><div class="num" id="stat-total">0</div><div class="lbl">Total funcionários</div></div>
+      <div class="stat-card stat-verde"><div class="num" id="stat-presentes">0</div><div class="lbl">Presentes hoje</div></div>
+      <div class="stat-card stat-azul"><div class="num" id="stat-registros-hoje">0</div><div class="lbl">Registros hoje</div></div>
+      <div class="stat-card stat-cinza"><div class="num" id="stat-ausentes">0</div><div class="lbl">Ausentes hoje</div></div>
+    </div>
+    <div class="card">
+      <h2>✅ Presentes agora</h2>
+      <div id="presentes-lista"><div class="empty"><div class="icon">👥</div>Nenhum funcionário presente.</div></div>
+    </div>
+    <div class="card">
+      <h2>🕐 Últimos registros do dia</h2>
+      <div class="tabela-wrap">
+        <table>
+          <thead><tr><th>Funcionário</th><th>Tipo</th><th>Hora</th></tr></thead>
+          <tbody id="ultimos-registros"><tr><td colspan="3" style="text-align:center;color:var(--sub);padding:20px">Sem registros hoje.</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ REGISTROS ═══ -->
+  <div class="tab-content" id="tab-registros">
+    <div class="filtro-periodo">
+      <h3>🗓️ Selecione o período</h3>
+      <div class="filtro-grid">
+        <div class="filtro-field"><label>Data inicial</label><input type="date" id="data-inicio"></div>
+        <div class="filtro-field"><label>Data final</label><input type="date" id="data-fim"></div>
+      </div>
+      <div class="filtro-acoes">
+        <button class="btn btn-rosa" onclick="carregarPeriodo()">🔍 Buscar registros</button>
+        <button class="btn btn-excel" onclick="exportarExcel()">📊 Exportar Excel</button>
+        <button class="btn btn-cinza btn-sm" onclick="definirHoje()">Hoje</button>
+        <button class="btn btn-cinza btn-sm" onclick="definirSemana()">Esta semana</button>
+        <button class="btn btn-cinza btn-sm" onclick="definirMes()">Este mês</button>
+      </div>
+    </div>
+
+    <div id="resumo-periodo" style="display:none" class="resumo-bar"></div>
+
+    <div class="card">
+      <h2>📋 Registros do período</h2>
+      <div id="registros-container">
+        <div class="empty"><div class="icon">🗓️</div>Selecione um período acima para ver os registros.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ FUNCIONÁRIOS ═══ -->
+  <div class="tab-content" id="tab-funcionarios">
+    <div class="card">
+      <h2>➕ Adicionar funcionário</h2>
+      <div class="form-grid">
+        <div class="field" style="grid-column:1/-1"><label>Nome completo</label><input type="text" id="novo-nome" placeholder="Ex: MARIA SILVA SANTOS" oninput="this.value=this.value.toUpperCase()"></div>
+        <div class="field"><label>Cargo</label><input type="text" id="novo-cargo" placeholder="Ex: Colaboradora, Gerente…"></div>
+        <div class="field"><label>ID personalizado (opcional)</label><input type="text" id="novo-id" placeholder="Gerado automaticamente"></div>
+      </div>
+      <br>
+      <button class="btn btn-rosa" onclick="adicionarFuncionario()">➕ Adicionar funcionário</button>
+    </div>
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:6px">
+        <h2 style="margin:0">👥 Funcionários cadastrados</h2>
+        <span class="counter">Total: <strong id="total-count">0</strong></span>
+      </div>
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="busca-func" placeholder="Buscar funcionário…" oninput="renderFuncionarios()">
+      </div>
+      <div class="emp-list" id="emp-list"><div class="empty"><div class="icon">👤</div>Carregando…</div></div>
+    </div>
+  </div>
+
+</main>
+
+<!-- MODAL EDITAR -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h3>✏️ Editar funcionário</h3>
+    <div class="form-grid">
+      <div class="field" style="grid-column:1/-1"><label>Nome completo</label><input type="text" id="edit-nome" oninput="this.value=this.value.toUpperCase()"></div>
+      <div class="field"><label>Cargo</label><input type="text" id="edit-cargo"></div>
+      <div class="field"><label>ID (não editável)</label><input type="text" id="edit-id" disabled style="opacity:.5"></div>
+    </div>
+    <br>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn btn-cinza" onclick="fecharModal()">Cancelar</button>
+      <button class="btn btn-rosa"  onclick="salvarEdicao()">💾 Salvar</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, onValue, set, remove, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDQ6EUH_HBLYd76HMCdlgupNcwzTHvgido",
+  authDomain: "bambam-ponto.firebaseapp.com",
+  databaseURL: "https://bambam-ponto-default-rtdb.firebaseio.com",
+  projectId: "bambam-ponto",
+  storageBucket: "bambam-ponto.firebasestorage.app",
+  messagingSenderId: "30916647304",
+  appId: "1:30916647304:web:70323b427dbdd0e51d423d"
+};
+const app = initializeApp(firebaseConfig);
+const db  = getDatabase(app);
+
+const PADRAO = [
+  {id:'EMP001',nome:'ADILSON DO CARMO MACHADO',cargo:'Colaborador'},
+  {id:'EMP002',nome:'ANA LUIZA SECO SILVA DE OLIVEIRA',cargo:'Colaboradora'},
+  {id:'EMP003',nome:'ANA PAULA ZULATO PEREIRA',cargo:'Colaboradora'},
+  {id:'EMP004',nome:'BEUTIMAR ANA HELENA DA SILVA',cargo:'Colaboradora'},
+  {id:'EMP005',nome:'ERIKA CRISTINA DA SILVA',cargo:'Colaboradora'},
+  {id:'EMP006',nome:'FABIANA ANICETO FERREIRA',cargo:'Colaboradora'},
+  {id:'EMP007',nome:'JOSILANE LEANDRO VENTURA',cargo:'Colaboradora'},
+  {id:'EMP008',nome:'SERGIO SOARES RAMOS',cargo:'Colaborador'},
+  {id:'EMP009',nome:'SILVANA APARECIDA DA SILVA MEDEIROS',cargo:'Colaboradora'},
+  {id:'EMP010',nome:'THAYLLON SALAZAR RAMOS BERNARDINO',cargo:'Colaborador'},
+  {id:'EMP011',nome:'PABLO ANDERSON MODESTO JUVENAL',cargo:'Colaborador'},
+];
+
+let funcionarios = [], registrosHoje = {}, dadosConsolidados = [], editandoId = null;
+
+function dataHoje() { return new Date().toISOString().split('T')[0]; }
+function iniciais(n) { const p=n.trim().split(' '); return (p[0][0]+(p[1]?.[0]||'')).toUpperCase(); }
+function formatarData(ds) { return ds.split('-').reverse().join('/'); }
+
+// ── TABS ──
+window.mudarTab = function(tab, btn) {
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ── FUNCIONÁRIOS ──
+onValue(ref(db,'funcionarios'), snap => {
+  const d = snap.val();
+  if (d) { funcionarios = Object.values(d); }
+  else { funcionarios = PADRAO; PADRAO.forEach(f=>set(ref(db,'funcionarios/'+f.id),f)); }
+  document.getElementById('stat-total').textContent = funcionarios.length;
+  document.getElementById('total-count').textContent = funcionarios.length;
+  renderFuncionarios(); atualizarDashboard();
+});
+
+// ── REGISTROS HOJE ──
+onValue(ref(db,'registros/'+dataHoje()), snap => {
+  registrosHoje = {}; let lista = [];
+  const d = snap.val();
+  if (d) { lista = Object.values(d); lista.forEach(r=>{ registrosHoje[r.empId]=r.tipo; }); }
+  document.getElementById('stat-registros-hoje').textContent = lista.length;
+  atualizarDashboard(); renderUltimosRegistros(lista);
+});
+
+function atualizarDashboard() {
+  const presentes = funcionarios.filter(f=>registrosHoje[f.id]==='entrada');
+  document.getElementById('stat-presentes').textContent = presentes.length;
+  document.getElementById('stat-ausentes').textContent  = funcionarios.length - presentes.length;
+  const pl = document.getElementById('presentes-lista');
+  if (!presentes.length) { pl.innerHTML=`<div class="empty"><div class="icon">👥</div>Nenhum funcionário presente.</div>`; return; }
+  pl.innerHTML = `<div class="emp-list">`+presentes.map(f=>`
+    <div class="emp-row">
+      <div class="emp-avatar">${iniciais(f.nome)}</div>
+      <div class="emp-info">
+        <div class="nome">${f.nome}</div>
+        <div class="meta"><span>🪪 ${f.id}</span><span class="cargo-badge">${f.cargo}</span><span class="status-presente">✅ Presente</span></div>
+      </div>
+    </div>`).join('')+`</div>`;
+}
+
+function renderUltimosRegistros(lista) {
+  const tbody = document.getElementById('ultimos-registros');
+  if (!lista.length) { tbody.innerHTML=`<tr><td colspan="3" style="text-align:center;color:var(--sub);padding:20px">Sem registros hoje.</td></tr>`; return; }
+  tbody.innerHTML = [...lista].reverse().slice(0,10).map(r=>`
+    <tr><td><strong>${r.nome}</strong></td><td><span class="badge badge-${r.tipo}">${r.tipo==='entrada'?'✅ Entrada':'🚪 Saída'}</span></td><td>${r.hora}</td></tr>`).join('');
+}
+
+// ── ATALHOS ──
+window.definirHoje   = function(){ const h=dataHoje(); document.getElementById('data-inicio').value=h; document.getElementById('data-fim').value=h; }
+window.definirSemana = function(){ const hoje=new Date(),dia=hoje.getDay(),seg=new Date(hoje); seg.setDate(hoje.getDate()-(dia===0?6:dia-1)); document.getElementById('data-inicio').value=seg.toISOString().split('T')[0]; document.getElementById('data-fim').value=dataHoje(); }
+window.definirMes    = function(){ const hoje=new Date(),ini=new Date(hoje.getFullYear(),hoje.getMonth(),1); document.getElementById('data-inicio').value=ini.toISOString().split('T')[0]; document.getElementById('data-fim').value=dataHoje(); }
+
+// ── CONSOLIDAR ──
+function consolidar(brutos) {
+  const mapa = {};
+  brutos.forEach(r => {
+    const chave = r.empId+'|'+r.data;
+    if (!mapa[chave]) mapa[chave] = {empId:r.empId,nome:r.nome,cargo:r.cargo||'',data:r.data,entradas:[],saidas:[]};
+    if (r.tipo==='entrada') mapa[chave].entradas.push(r.hora);
+    else                    mapa[chave].saidas.push(r.hora);
+  });
+  return Object.values(mapa).map(g => {
+    g.entradas.sort(); g.saidas.sort();
+    return { empId:g.empId, nome:g.nome, cargo:g.cargo, data:g.data,
+      entrada:g.entradas[0]||'', sAlmoco:g.saidas[0]||'',
+      vAlmoco:g.entradas[1]||'', saida:g.saidas[1]||'' };
+  }).sort((a,b)=>a.data!==b.data?a.data.localeCompare(b.data):a.nome.localeCompare(b.nome));
+}
+
+// ── CHAVE OCORRÊNCIA NO FIREBASE ──
+function chaveOcorrencia(empId, data) {
+  return 'ocorrencias/' + data + '/' + empId;
+}
+
+// ── SALVAR OCORRÊNCIA ──
+window.salvarOcorrencia = async function(empId, data, valor, selEl) {
+  // Atualiza cor do select
+  atualizarCorSelect(selEl, valor);
+  await set(ref(db, chaveOcorrencia(empId, data)), valor);
+  // Mostra "Salvo!" ao lado
+  let badge = selEl.parentElement.querySelector('.salvo-badge');
+  if (badge) badge.remove();
+  badge = document.createElement('span');
+  badge.className = 'salvo-badge';
+  badge.textContent = '✓ Salvo';
+  selEl.parentElement.appendChild(badge);
+  setTimeout(()=>{ if(badge.parentElement) badge.remove(); }, 2000);
+}
+
+function atualizarCorSelect(el, valor) {
+  el.className = 'ocorrencia-sel';
+  const mapa = {'Normal':'normal','Férias':'ferias','Af. Doença':'doenca','Falta':'falta','Outro':'outro'};
+  if (mapa[valor]) el.classList.add(mapa[valor]);
+}
+
+// ── CARREGAR PERÍODO ──
+window.carregarPeriodo = async function() {
+  const inicio = document.getElementById('data-inicio').value;
+  const fim    = document.getElementById('data-fim').value;
+  if (!inicio||!fim) { alert('⚠️ Selecione a data inicial e final.'); return; }
+  if (inicio>fim)    { alert('⚠️ A data inicial não pode ser maior que a final.'); return; }
+
+  document.getElementById('registros-container').innerHTML = `<div class="loading-tab"><div class="spinner"></div>Buscando registros…</div>`;
+
+  const datas = [];
+  const cur = new Date(inicio+'T12:00:00'), end = new Date(fim+'T12:00:00');
+  while (cur<=end) { datas.push(cur.toISOString().split('T')[0]); cur.setDate(cur.getDate()+1); }
+
+  // Busca registros e ocorrências em paralelo
+  const [snapsReg, snapsOc] = await Promise.all([
+    Promise.all(datas.map(d=>get(ref(db,'registros/'+d)))),
+    Promise.all(datas.map(d=>get(ref(db,'ocorrencias/'+d))))
+  ]);
+
+  const brutos = [];
+  snapsReg.forEach(s=>{ const v=s.val(); if(v) brutos.push(...Object.values(v)); });
+
+  // Monta mapa de ocorrências empId|data → valor
+  const ocMap = {};
+  snapsOc.forEach((s,i)=>{ const v=s.val(); if(v) Object.entries(v).forEach(([empId,oc])=>{ ocMap[empId+'|'+datas[i]]=oc; }); });
+
+  dadosConsolidados = consolidar(brutos).map(r=>({ ...r, ocorrencia: ocMap[r.empId+'|'+r.data]||'Normal' }));
+
+  const resumo = document.getElementById('resumo-periodo');
+  resumo.style.display = 'flex';
+  resumo.innerHTML = `
+    <span>📅 Período: <strong>${formatarData(inicio)} a ${formatarData(fim)}</strong></span>
+    <span>📋 Linhas: <strong>${dadosConsolidados.length}</strong></span>
+    <span>👥 Funcionários: <strong>${new Set(dadosConsolidados.map(r=>r.empId)).size}</strong></span>`;
+
+  if (!dadosConsolidados.length) {
+    document.getElementById('registros-container').innerHTML = `<div class="empty"><div class="icon">📋</div>Nenhum registro encontrado neste período.</div>`;
+    return;
+  }
+
+  // Monta tabela com select de ocorrência em cada linha
+  const linhas = dadosConsolidados.map(r => {
+    const opcoes = ['Normal','Férias','Af. Doença','Falta','Outro'];
+    const classeSel = {Normal:'normal',Férias:'ferias','Af. Doença':'doenca',Falta:'falta',Outro:'outro'}[r.ocorrencia]||'normal';
+    const opcoesHtml = opcoes.map(o=>`<option value="${o}" ${o===r.ocorrencia?'selected':''}>${o}</option>`).join('');
+    return `<tr>
+      <td>${r.empId}</td>
+      <td><strong>${r.nome}</strong></td>
+      <td>${formatarData(r.data)}</td>
+      <td class="${r.entrada?'hora':'vazio'}">${r.entrada||'—'}</td>
+      <td class="${r.sAlmoco?'hora':'vazio'}">${r.sAlmoco||'—'}</td>
+      <td class="${r.vAlmoco?'hora':'vazio'}">${r.vAlmoco||'—'}</td>
+      <td class="${r.saida?'hora':'vazio'}">${r.saida||'—'}</td>
+      <td style="min-width:160px">
+        <select class="ocorrencia-sel ${classeSel}"
+          onchange="salvarOcorrencia('${r.empId}','${r.data}',this.value,this)"
+          title="Clique para alterar a ocorrência">
+          ${opcoesHtml}
+        </select>
+      </td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('registros-container').innerHTML = `
+    <div class="tabela-wrap">
+      <table>
+        <thead><tr>
+          <th>ID</th><th>Funcionário</th><th>Data</th>
+          <th>Entrada</th><th>S. Almoço</th><th>V. Almoço</th><th>Saída</th>
+          <th>Ocorrência ✏️</th>
+        </tr></thead>
+        <tbody>${linhas}</tbody>
+      </table>
+    </div>`;
+}
+
+// ── EXPORTAR EXCEL ──
+window.exportarExcel = function() {
+  const inicio = document.getElementById('data-inicio').value;
+  const fim    = document.getElementById('data-fim').value;
+  if (!inicio||!fim) { alert('⚠️ Selecione o período e clique em Buscar primeiro.'); return; }
+  if (!dadosConsolidados.length) { alert('⚠️ Nenhum registro. Clique em Buscar primeiro.'); return; }
+
+  // Pega ocorrências atuais dos selects da tela (caso tenham sido alteradas)
+  const selects = document.querySelectorAll('.ocorrencia-sel');
+  selects.forEach((sel,i)=>{ if(dadosConsolidados[i]) dadosConsolidados[i].ocorrencia = sel.value; });
+
+  const cab = ['ID','Funcionário','Cargo','Data','Entrada','S. Almoço','V. Almoço','Saída','Ocorrência'];
+  const linhas = [cab];
+  dadosConsolidados.forEach(r=>{
+    linhas.push([r.empId,r.nome,r.cargo,formatarData(r.data),r.entrada,r.sAlmoco,r.vAlmoco,r.saida,r.ocorrencia]);
+  });
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(linhas);
+  ws['!cols'] = [{wch:8},{wch:36},{wch:16},{wch:12},{wch:10},{wch:10},{wch:10},{wch:10},{wch:14}];
+  XLSX.utils.book_append_sheet(wb, ws, 'Ponto');
+  XLSX.writeFile(wb, `Ponto_BAMBAM_${formatarData(inicio).replace(/\//g,'-')}_a_${formatarData(fim).replace(/\//g,'-')}.xlsx`);
+  mostrarToast('📊 Excel exportado com sucesso!');
+}
+
+// ── FUNCIONÁRIOS ──
+window.renderFuncionarios = function() {
+  const busca = (document.getElementById('busca-func')?.value||'').toLowerCase();
+  const filtro = funcionarios.filter(f=>f.nome.toLowerCase().includes(busca)||f.id.toLowerCase().includes(busca));
+  const container = document.getElementById('emp-list');
+  if (!filtro.length) { container.innerHTML=`<div class="empty"><div class="icon">👤</div>Nenhum encontrado.</div>`; return; }
+  container.innerHTML = filtro.map(f=>`
+    <div class="emp-row">
+      <div class="emp-avatar">${iniciais(f.nome)}</div>
+      <div class="emp-info">
+        <div class="nome">${f.nome}</div>
+        <div class="meta"><span>🪪 ${f.id}</span><span class="cargo-badge">${f.cargo||'Colaborador'}</span>${registrosHoje[f.id]==='entrada'?'<span class="status-presente">✅ Presente</span>':''}</div>
+      </div>
+      <div class="emp-actions">
+        <button class="btn btn-verde btn-sm" onclick="abrirModal('${f.id}')">✏️</button>
+        <button class="btn btn-perigo btn-sm" onclick="removerFuncionario('${f.id}')">🗑️</button>
+      </div>
+    </div>`).join('');
+}
+
+window.adicionarFuncionario = async function() {
+  const nome  = document.getElementById('novo-nome').value.trim().toUpperCase();
+  const cargo = document.getElementById('novo-cargo').value.trim()||'Colaborador';
+  let   id    = document.getElementById('novo-id').value.trim().toUpperCase();
+  if (!nome) { alert('⚠️ Informe o nome completo.'); return; }
+  if (!id) {
+    const nums = funcionarios.map(f=>parseInt(f.id.replace('EMP',''))).filter(n=>!isNaN(n));
+    id = 'EMP'+String((nums.length?Math.max(...nums):0)+1).padStart(3,'0');
+  } else if (funcionarios.find(f=>f.id===id)) { alert('⚠️ Este ID já existe.'); return; }
+  await set(ref(db,'funcionarios/'+id),{id,nome,cargo});
+  document.getElementById('novo-nome').value='';
+  document.getElementById('novo-cargo').value='';
+  document.getElementById('novo-id').value='';
+  mostrarToast(`✅ ${nome.split(' ')[0]} adicionado(a)! ID: ${id}`);
+}
+
+window.removerFuncionario = async function(id) {
+  const f = funcionarios.find(x=>x.id===id);
+  if (!f||!confirm(`⚠️ Remover "${f.nome}" do sistema?`)) return;
+  await remove(ref(db,'funcionarios/'+id));
+  mostrarToast(`🗑️ ${f.nome.split(' ')[0]} removido(a).`);
+}
+
+window.abrirModal = function(id) {
+  const f = funcionarios.find(x=>x.id===id); if (!f) return;
+  editandoId = id;
+  document.getElementById('edit-nome').value  = f.nome;
+  document.getElementById('edit-cargo').value = f.cargo||'';
+  document.getElementById('edit-id').value    = f.id;
+  document.getElementById('modal').classList.add('open');
+}
+window.fecharModal = function() { document.getElementById('modal').classList.remove('open'); editandoId=null; }
+window.salvarEdicao = async function() {
+  if (!editandoId) return;
+  const nome  = document.getElementById('edit-nome').value.trim().toUpperCase();
+  const cargo = document.getElementById('edit-cargo').value.trim()||'Colaborador';
+  if (!nome) { alert('⚠️ O nome não pode ficar vazio.'); return; }
+  await set(ref(db,'funcionarios/'+editandoId),{id:editandoId,nome,cargo});
+  fecharModal(); mostrarToast('💾 Alterações salvas!');
+}
+document.getElementById('modal').addEventListener('click',function(e){if(e.target===this)fecharModal();});
+
+function mostrarToast(msg) {
+  let t=document.getElementById('toast');
+  if(!t){t=document.createElement('div');t.id='toast';Object.assign(t.style,{position:'fixed',bottom:'24px',left:'50%',transform:'translateX(-50%) translateY(80px)',background:'#1F2937',color:'#fff',padding:'12px 24px',borderRadius:'30px',fontFamily:'Montserrat,sans-serif',fontWeight:'700',fontSize:'.88rem',boxShadow:'0 8px 24px #0003',transition:'transform .3s',zIndex:'999',whiteSpace:'nowrap'});document.body.appendChild(t);}
+  t.textContent=msg;
+  setTimeout(()=>{t.style.transform='translateX(-50%) translateY(0)';},10);
+  setTimeout(()=>{t.style.transform='translateX(-50%) translateY(80px)';},3200);
+}
+
+definirMes();
+</script>
+</body>
+</html>
