@@ -336,62 +336,54 @@ window.exportar=function(){
   document.querySelectorAll('.os').forEach((s,i)=>{if(dadosCons[i])dadosCons[i].ocorrencia=s.value;});
 
   const cab=['ID','Funcionário','Cargo','Data','Entrada','S. Almoço','V. Almoço','Saída','Ocorrência'];
-  const linhas=[cab];
-  dadosCons.forEach(r=>linhas.push([r.empId,r.nome,r.cargo,fd(r.data),r.entrada,r.sAlmoco,r.vAlmoco,r.saida,r.ocorrencia]));
 
-  const wb=XLSX.utils.book_new();
-  const ws=XLSX.utils.aoa_to_sheet(linhas);
+  // Monta HTML estilizado que o Excel abre como tabela formatada
+  let html=`
+  <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+  <head><meta charset="UTF-8">
+  <!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet>
+  <x:Name>Ponto BAMBAM BABY</x:Name>
+  <x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions>
+  </x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->
+  </head><body>
+  <table border="1" style="border-collapse:collapse;font-family:Calibri,Arial;font-size:11pt;">
+  <thead><tr>`;
 
-  // Largura das colunas
-  ws['!cols']=[{wch:8},{wch:36},{wch:16},{wch:12},{wch:10},{wch:10},{wch:10},{wch:10},{wch:14}];
-
-  // Estilo do cabeçalho
-  const corCab='DB2777';
-  cab.forEach((_,c)=>{
-    const cell=XLSX.utils.encode_cell({r:0,c});
-    if(!ws[cell])ws[cell]={v:cab[c],t:'s'};
-    ws[cell].s={
-      font:{bold:true,color:{rgb:'FFFFFF'},sz:11},
-      fill:{fgColor:{rgb:corCab}},
-      alignment:{horizontal:'center',vertical:'center'},
-      border:{
-        top:{style:'thin',color:{rgb:'FFFFFF'}},
-        bottom:{style:'thin',color:{rgb:'FFFFFF'}},
-        left:{style:'thin',color:{rgb:'FFFFFF'}},
-        right:{style:'thin',color:{rgb:'FFFFFF'}}
-      }
-    };
+  // Cabeçalho
+  cab.forEach(c=>{
+    html+=`<th style="background:#DB2777;color:#fff;font-weight:bold;padding:8px 12px;border:1px solid #c0185e;text-align:center;white-space:nowrap;">${c}</th>`;
   });
+  html+=`</tr></thead><tbody>`;
 
-  // Estilo das linhas — alternado
-  linhas.forEach((_,r)=>{
-    if(r===0)return;
-    const par=r%2===0;
-    cab.forEach((__,c)=>{
-      const cell=XLSX.utils.encode_cell({r,c});
-      if(!ws[cell])return;
-      ws[cell].s={
-        fill:{fgColor:{rgb:par?'FFF0F6':'FFFFFF'}},
-        alignment:{horizontal:'center',vertical:'center'},
-        border:{
-          top:{style:'thin',color:{rgb:'E5E7EB'}},
-          bottom:{style:'thin',color:{rgb:'E5E7EB'}},
-          left:{style:'thin',color:{rgb:'E5E7EB'}},
-          right:{style:'thin',color:{rgb:'E5E7EB'}}
-        }
-      };
+  // Linhas de dados
+  dadosCons.forEach((r,i)=>{
+    const bg=i%2===0?'#FFF0F6':'#FFFFFF';
+    const vals=[r.empId,r.nome,r.cargo,fd(r.data),r.entrada||'—',r.sAlmoco||'—',r.vAlmoco||'—',r.saida||'—',r.ocorrencia];
+    html+=`<tr>`;
+    vals.forEach(v=>{
+      html+=`<td style="background:${bg};padding:6px 12px;border:1px solid #E5E7EB;text-align:center;">${v}</td>`;
     });
+    html+=`</tr>`;
   });
 
-  // Definir como Tabela do Excel
-  ws['!autofilter']={ref:`A1:I${linhas.length}`};
+  // Linha de total
+  html+=`<tr>
+    <td colspan="9" style="background:#F8F8FA;padding:6px 12px;border:1px solid #E5E7EB;font-weight:bold;color:#6B7280;text-align:right;">
+      Total de registros: ${dadosCons.length}
+    </td>
+  </tr>`;
 
-  // Altura da linha de cabeçalho
-  ws['!rows']=[{hpt:22}];
+  html+=`</tbody></table></body></html>`;
 
-  XLSX.utils.book_append_sheet(wb,ws,'Ponto BAMBAM BABY');
-  XLSX.writeFile(wb,`Ponto_BAMBAM_${fd(di).replace(/\//g,'-')}_a_${fd(df).replace(/\//g,'-')}.xlsx`);
-  toast('📊 Excel exportado em tabela!');
+  // Gera o arquivo
+  const blob=new Blob([html],{type:'application/vnd.ms-excel;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=`Ponto_BAMBAM_${fd(di).replace(/\//g,'-')}_a_${fd(df).replace(/\//g,'-')}.xls`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('📊 Tabela Excel exportada com sucesso!');
 };
 
 window.renderF=function(){
