@@ -214,9 +214,29 @@ async function buscarUltimo(empId){
   return null;
 }
 
+// Guarda o último registro de cada funcionário em memória para bloqueio rápido
+let ultimoRegistroCache={};
+
 window.abrirModal=async function(empId){
   const f=funcionarios[empId];
   if(!f){mostrarToast('❌ Crachá não reconhecido no sistema.','#ff4d6d');return;}
+
+  // Busca último registro
+  const ultimo=await buscarUltimo(f.id);
+  ultimoRegistroCache[empId]=ultimo;
+
+  // Verifica bloqueio de 5 minutos
+  if(ultimo && ultimo.timestamp){
+    const agora=new Date();
+    const ultTime=new Date(ultimo.timestamp);
+    const diffMin=(agora-ultTime)/1000/60;
+    if(diffMin<5){
+      const restante=Math.ceil(5-diffMin);
+      mostrarToast(`⏱️ ${f.nome.split(' ')[0]} já registrou há menos de 5 min. Aguarde ${restante} min.`,'#E5C07B');
+      return;
+    }
+  }
+
   funcSel=f; tipoEsc=null;
   document.getElementById('av1').textContent=iniciais(f.nome);
   document.getElementById('nm1').textContent=f.nome;
@@ -224,19 +244,49 @@ window.abrirModal=async function(empId){
   document.getElementById('step1').style.display='block';
   document.getElementById('step2').style.display='none';
   document.getElementById('modal').classList.add('open');
+
+  // Mostra último registro e desativa botão igual ao último
   const box=document.getElementById('ultimo-box');
-  box.className='ultimo-box ultimo-nenhum'; box.innerHTML='🔍 Buscando último registro…';
-  const ultimo=await buscarUltimo(f.id);
-  if(!ultimo){box.className='ultimo-box ultimo-nenhum';box.innerHTML='📋 Nenhum registro anterior encontrado.';}
-  else{
+  const btnE=document.querySelector('.btn-e');
+  const btnS=document.querySelector('.btn-s');
+
+  // Reativa os dois botões primeiro
+  btnE.disabled=false; btnE.style.opacity='1'; btnE.style.cursor='pointer';
+  btnS.disabled=false; btnS.style.opacity='1'; btnS.style.cursor='pointer';
+
+  if(!ultimo){
+    box.className='ultimo-box ultimo-nenhum';
+    box.innerHTML='📋 Nenhum registro anterior encontrado.';
+  } else {
     const ehHoje=ultimo.data===dataHoje();
     const quando=ehHoje?'hoje':'em '+ultimo.data.split('-').reverse().join('/');
-    if(ultimo.tipo==='entrada'){box.className='ultimo-box ultimo-entrada';box.innerHTML=`Último registro:<strong>✅ ENTRADA ${quando} às ${ultimo.hora}</strong>`;}
-    else{box.className='ultimo-box ultimo-saida';box.innerHTML=`Último registro:<strong>🚪 SAÍDA ${quando} às ${ultimo.hora}</strong>`;}
+    if(ultimo.tipo==='entrada'){
+      box.className='ultimo-box ultimo-entrada';
+      box.innerHTML=`Último registro:<strong>✅ ENTRADA ${quando} às ${ultimo.hora}</strong>`;
+      // Bloqueia botão ENTRADA (não pode entrar duas vezes seguidas)
+      btnE.disabled=true;
+      btnE.style.opacity='.35';
+      btnE.style.cursor='not-allowed';
+      btnE.title='Já registrou ENTRADA — registre SAÍDA primeiro';
+    } else {
+      box.className='ultimo-box ultimo-saida';
+      box.innerHTML=`Último registro:<strong>🚪 SAÍDA ${quando} às ${ultimo.hora}</strong>`;
+      // Bloqueia botão SAÍDA (não pode sair duas vezes seguidas)
+      btnS.disabled=true;
+      btnS.style.opacity='.35';
+      btnS.style.cursor='not-allowed';
+      btnS.title='Já registrou SAÍDA — registre ENTRADA primeiro';
+    }
   }
 }
 
 window.escolher=function(tipo){
+  // Verificação extra de segurança
+  const ultimo=ultimoRegistroCache[funcSel?.id];
+  if(ultimo && ultimo.tipo===tipo){
+    mostrarToast(`⚠️ Não é possível registrar ${tipo==='entrada'?'ENTRADA':'SAÍDA'} duas vezes seguidas!`,'#E5C07B');
+    return;
+  }
   tipoEsc=tipo; const f=funcSel, agora=new Date().toLocaleTimeString('pt-BR');
   document.getElementById('av2').textContent=iniciais(f.nome);
   document.getElementById('nm2').textContent=f.nome;
