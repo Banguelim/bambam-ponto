@@ -15,11 +15,7 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Montserrat', sans-serif; background: #F0F2F5; color: var(--texto); min-height: 100vh; }
 
-header {
-  background: #fff; border-bottom: 2px solid var(--borda);
-  padding: 16px 28px; display: flex; align-items: center;
-  justify-content: space-between; gap: 12px; flex-wrap: wrap;
-}
+header { background:#fff; border-bottom:2px solid var(--borda); padding:16px 28px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
 .logo-mark { width:44px; height:44px; background:linear-gradient(135deg,var(--rosa),var(--rosa-d)); border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1.4rem; }
 .header-left { display:flex; align-items:center; gap:14px; }
 header h1 { font-size:1.1rem; font-weight:900; }
@@ -33,7 +29,7 @@ header p  { font-size:.75rem; color:var(--sub); margin-top:2px; }
 .tab-btn:hover { color:var(--rosa-d); }
 .tab-btn.active { color:var(--rosa-d); border-bottom-color:var(--rosa-d); }
 
-main { max-width:1000px; margin:0 auto; padding:28px 18px 80px; }
+main { max-width:1100px; margin:0 auto; padding:28px 18px 80px; }
 .tab-content { display:none; }
 .tab-content.active { display:block; }
 
@@ -49,35 +45,50 @@ main { max-width:1000px; margin:0 auto; padding:28px 18px 80px; }
 .tabela-wrap { overflow-x:auto; }
 table { width:100%; border-collapse:collapse; font-size:.82rem; }
 th { background:var(--cinza); padding:10px 14px; text-align:left; font-size:.72rem; text-transform:uppercase; letter-spacing:.6px; color:var(--sub); border-bottom:2px solid var(--borda); white-space:nowrap; }
-td { padding:12px 14px; border-bottom:1px solid var(--borda); }
+td { padding:10px 14px; border-bottom:1px solid var(--borda); white-space:nowrap; }
 tr:last-child td { border-bottom:none; }
 tr:hover td { background:#FAFAFA; }
+
+/* OCORRÊNCIA SELECT */
+.ocorrencia-sel {
+  padding: 5px 10px;
+  border: 1.5px solid var(--borda);
+  border-radius: 8px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: .75rem;
+  font-weight: 700;
+  cursor: pointer;
+  background: var(--cinza);
+  color: var(--texto);
+  transition: border-color .2s;
+  min-width: 130px;
+}
+.ocorrencia-sel:focus { outline: none; border-color: var(--rosa); }
+.ocorrencia-sel.normal    { background:#F0FDF4; color:#15803D; border-color:#86EFAC; }
+.ocorrencia-sel.ferias    { background:#EFF6FF; color:#1D4ED8; border-color:#93C5FD; }
+.ocorrencia-sel.doenca    { background:#FEF3C7; color:#92400E; border-color:#FCD34D; }
+.ocorrencia-sel.falta     { background:#FEE2E2; color:var(--vermelho); border-color:#FCA5A5; }
+.ocorrencia-sel.outro     { background:#F3F4F6; color:var(--sub); border-color:var(--borda); }
+
+td.hora { font-family:monospace; font-size:.85rem; font-weight:700; color:var(--texto); }
+td.vazio { color:#D1D5DB; font-style:italic; }
 
 .badge { display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:20px; font-size:.7rem; font-weight:700; }
 .badge-entrada { background:#F0FDF4; color:var(--verde); border:1px solid #86EFAC; }
 .badge-saida   { background:#FFF0F6; color:var(--rosa-d); border:1px solid #FECDD3; }
 
-/* FILTRO PERÍODO */
-.filtro-periodo {
-  background: var(--cinza); border-radius: 12px; padding: 18px;
-  border: 1.5px solid var(--borda); margin-bottom: 20px;
-}
-.filtro-periodo h3 { font-size:.85rem; font-weight:800; margin-bottom:14px; color:var(--texto); }
+/* FILTRO */
+.filtro-periodo { background:var(--cinza); border-radius:12px; padding:18px; border:1.5px solid var(--borda); margin-bottom:20px; }
+.filtro-periodo h3 { font-size:.85rem; font-weight:800; margin-bottom:14px; }
 .filtro-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px; }
 @media(max-width:480px){.filtro-grid{grid-template-columns:1fr}}
 .filtro-field { display:flex; flex-direction:column; gap:5px; }
 .filtro-field label { font-size:.72rem; font-weight:700; color:var(--sub); text-transform:uppercase; letter-spacing:.6px; }
 .filtro-field input[type=date] { padding:10px 14px; border:1.5px solid var(--borda); border-radius:10px; font-family:'Montserrat',sans-serif; font-size:.88rem; background:#fff; color:var(--texto); width:100%; }
 .filtro-field input[type=date]:focus { outline:none; border-color:var(--rosa); }
-.filtro-acoes { display:flex; gap:10px; flex-wrap:wrap; }
+.filtro-acoes { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
 
-/* RESUMO PERÍODO */
-.resumo-bar {
-  display:none; background:#F0FDF4; border:1.5px solid #86EFAC;
-  border-radius:10px; padding:12px 16px; margin-bottom:16px;
-  font-size:.82rem; font-weight:600; color:var(--verde);
-  display:flex; gap:20px; flex-wrap:wrap; align-items:center;
-}
+.resumo-bar { background:#F0FDF4; border:1.5px solid #86EFAC; border-radius:10px; padding:12px 16px; margin-bottom:16px; font-size:.82rem; font-weight:600; color:var(--verde); display:flex; flex-wrap:wrap; gap:16px; align-items:center; }
 .resumo-bar span strong { color:var(--texto); }
 
 .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
@@ -122,10 +133,12 @@ tr:hover td { background:#FAFAFA; }
 .empty .icon { font-size:2.5rem; margin-bottom:10px; }
 .counter { font-size:.8rem; color:var(--sub); font-weight:600; }
 .counter strong { color:var(--texto); }
-
 .loading-tab { text-align:center; padding:40px; color:var(--sub); }
 .spinner { width:32px; height:32px; border:3px solid var(--borda); border-top-color:var(--rosa); border-radius:50%; animation:spin .7s linear infinite; margin:0 auto 12px; }
 @keyframes spin{to{transform:rotate(360deg)}}
+
+.salvo-badge { display:inline-block; background:#F0FDF4; color:#15803D; border:1px solid #86EFAC; border-radius:20px; padding:2px 10px; font-size:.68rem; font-weight:700; margin-left:8px; animation: fadeOut 2s forwards; }
+@keyframes fadeOut { 0%{opacity:1} 70%{opacity:1} 100%{opacity:0} }
 </style>
 </head>
 <body>
@@ -174,18 +187,12 @@ tr:hover td { background:#FAFAFA; }
     <div class="filtro-periodo">
       <h3>🗓️ Selecione o período</h3>
       <div class="filtro-grid">
-        <div class="filtro-field">
-          <label>Data inicial</label>
-          <input type="date" id="data-inicio">
-        </div>
-        <div class="filtro-field">
-          <label>Data final</label>
-          <input type="date" id="data-fim">
-        </div>
+        <div class="filtro-field"><label>Data inicial</label><input type="date" id="data-inicio"></div>
+        <div class="filtro-field"><label>Data final</label><input type="date" id="data-fim"></div>
       </div>
       <div class="filtro-acoes">
         <button class="btn btn-rosa" onclick="carregarPeriodo()">🔍 Buscar registros</button>
-        <button class="btn btn-excel" onclick="exportarExcel()">📊 Exportar para Excel</button>
+        <button class="btn btn-excel" onclick="exportarExcel()">📊 Exportar Excel</button>
         <button class="btn btn-cinza btn-sm" onclick="definirHoje()">Hoje</button>
         <button class="btn btn-cinza btn-sm" onclick="definirSemana()">Esta semana</button>
         <button class="btn btn-cinza btn-sm" onclick="definirMes()">Este mês</button>
@@ -207,18 +214,9 @@ tr:hover td { background:#FAFAFA; }
     <div class="card">
       <h2>➕ Adicionar funcionário</h2>
       <div class="form-grid">
-        <div class="field" style="grid-column:1/-1">
-          <label>Nome completo</label>
-          <input type="text" id="novo-nome" placeholder="Ex: MARIA SILVA SANTOS" oninput="this.value=this.value.toUpperCase()">
-        </div>
-        <div class="field">
-          <label>Cargo</label>
-          <input type="text" id="novo-cargo" placeholder="Ex: Colaboradora, Gerente…">
-        </div>
-        <div class="field">
-          <label>ID personalizado (opcional)</label>
-          <input type="text" id="novo-id" placeholder="Gerado automaticamente">
-        </div>
+        <div class="field" style="grid-column:1/-1"><label>Nome completo</label><input type="text" id="novo-nome" placeholder="Ex: MARIA SILVA SANTOS" oninput="this.value=this.value.toUpperCase()"></div>
+        <div class="field"><label>Cargo</label><input type="text" id="novo-cargo" placeholder="Ex: Colaboradora, Gerente…"></div>
+        <div class="field"><label>ID personalizado (opcional)</label><input type="text" id="novo-id" placeholder="Gerado automaticamente"></div>
       </div>
       <br>
       <button class="btn btn-rosa" onclick="adicionarFuncionario()">➕ Adicionar funcionário</button>
@@ -257,7 +255,7 @@ tr:hover td { background:#FAFAFA; }
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, onValue, set, remove, get, push } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getDatabase, ref, onValue, set, remove, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDQ6EUH_HBLYd76HMCdlgupNcwzTHvgido",
@@ -285,11 +283,10 @@ const PADRAO = [
   {id:'EMP011',nome:'PABLO ANDERSON MODESTO JUVENAL',cargo:'Colaborador'},
 ];
 
-let funcionarios = [], registrosHoje = {}, registrosPeriodo = [], editandoId = null;
+let funcionarios = [], registrosHoje = {}, dadosConsolidados = [], editandoId = null;
 
 function dataHoje() { return new Date().toISOString().split('T')[0]; }
 function iniciais(n) { const p=n.trim().split(' '); return (p[0][0]+(p[1]?.[0]||'')).toUpperCase(); }
-
 function formatarData(ds) { return ds.split('-').reverse().join('/'); }
 
 // ── TABS ──
@@ -307,19 +304,16 @@ onValue(ref(db,'funcionarios'), snap => {
   else { funcionarios = PADRAO; PADRAO.forEach(f=>set(ref(db,'funcionarios/'+f.id),f)); }
   document.getElementById('stat-total').textContent = funcionarios.length;
   document.getElementById('total-count').textContent = funcionarios.length;
-  renderFuncionarios();
-  atualizarDashboard();
+  renderFuncionarios(); atualizarDashboard();
 });
 
-// ── REGISTROS HOJE (dashboard em tempo real) ──
+// ── REGISTROS HOJE ──
 onValue(ref(db,'registros/'+dataHoje()), snap => {
-  registrosHoje = {};
-  let lista = [];
+  registrosHoje = {}; let lista = [];
   const d = snap.val();
   if (d) { lista = Object.values(d); lista.forEach(r=>{ registrosHoje[r.empId]=r.tipo; }); }
   document.getElementById('stat-registros-hoje').textContent = lista.length;
-  atualizarDashboard();
-  renderUltimosRegistros(lista);
+  atualizarDashboard(); renderUltimosRegistros(lista);
 });
 
 function atualizarDashboard() {
@@ -345,91 +339,126 @@ function renderUltimosRegistros(lista) {
     <tr><td><strong>${r.nome}</strong></td><td><span class="badge badge-${r.tipo}">${r.tipo==='entrada'?'✅ Entrada':'🚪 Saída'}</span></td><td>${r.hora}</td></tr>`).join('');
 }
 
-// ── ATALHOS DE PERÍODO ──
-window.definirHoje = function() {
-  const h = dataHoje();
-  document.getElementById('data-inicio').value = h;
-  document.getElementById('data-fim').value = h;
+// ── ATALHOS ──
+window.definirHoje   = function(){ const h=dataHoje(); document.getElementById('data-inicio').value=h; document.getElementById('data-fim').value=h; }
+window.definirSemana = function(){ const hoje=new Date(),dia=hoje.getDay(),seg=new Date(hoje); seg.setDate(hoje.getDate()-(dia===0?6:dia-1)); document.getElementById('data-inicio').value=seg.toISOString().split('T')[0]; document.getElementById('data-fim').value=dataHoje(); }
+window.definirMes    = function(){ const hoje=new Date(),ini=new Date(hoje.getFullYear(),hoje.getMonth(),1); document.getElementById('data-inicio').value=ini.toISOString().split('T')[0]; document.getElementById('data-fim').value=dataHoje(); }
+
+// ── CONSOLIDAR ──
+function consolidar(brutos) {
+  const mapa = {};
+  brutos.forEach(r => {
+    const chave = r.empId+'|'+r.data;
+    if (!mapa[chave]) mapa[chave] = {empId:r.empId,nome:r.nome,cargo:r.cargo||'',data:r.data,entradas:[],saidas:[]};
+    if (r.tipo==='entrada') mapa[chave].entradas.push(r.hora);
+    else                    mapa[chave].saidas.push(r.hora);
+  });
+  return Object.values(mapa).map(g => {
+    g.entradas.sort(); g.saidas.sort();
+    return { empId:g.empId, nome:g.nome, cargo:g.cargo, data:g.data,
+      entrada:g.entradas[0]||'', sAlmoco:g.saidas[0]||'',
+      vAlmoco:g.entradas[1]||'', saida:g.saidas[1]||'' };
+  }).sort((a,b)=>a.data!==b.data?a.data.localeCompare(b.data):a.nome.localeCompare(b.nome));
 }
-window.definirSemana = function() {
-  const hoje = new Date();
-  const diaSemana = hoje.getDay();
-  const segunda = new Date(hoje); segunda.setDate(hoje.getDate() - (diaSemana===0?6:diaSemana-1));
-  document.getElementById('data-inicio').value = segunda.toISOString().split('T')[0];
-  document.getElementById('data-fim').value = dataHoje();
+
+// ── CHAVE OCORRÊNCIA NO FIREBASE ──
+function chaveOcorrencia(empId, data) {
+  return 'ocorrencias/' + data + '/' + empId;
 }
-window.definirMes = function() {
-  const hoje = new Date();
-  const inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-  document.getElementById('data-inicio').value = inicio.toISOString().split('T')[0];
-  document.getElementById('data-fim').value = dataHoje();
+
+// ── SALVAR OCORRÊNCIA ──
+window.salvarOcorrencia = async function(empId, data, valor, selEl) {
+  // Atualiza cor do select
+  atualizarCorSelect(selEl, valor);
+  await set(ref(db, chaveOcorrencia(empId, data)), valor);
+  // Mostra "Salvo!" ao lado
+  let badge = selEl.parentElement.querySelector('.salvo-badge');
+  if (badge) badge.remove();
+  badge = document.createElement('span');
+  badge.className = 'salvo-badge';
+  badge.textContent = '✓ Salvo';
+  selEl.parentElement.appendChild(badge);
+  setTimeout(()=>{ if(badge.parentElement) badge.remove(); }, 2000);
+}
+
+function atualizarCorSelect(el, valor) {
+  el.className = 'ocorrencia-sel';
+  const mapa = {'Normal':'normal','Férias':'ferias','Af. Doença':'doenca','Falta':'falta','Outro':'outro'};
+  if (mapa[valor]) el.classList.add(mapa[valor]);
 }
 
 // ── CARREGAR PERÍODO ──
 window.carregarPeriodo = async function() {
   const inicio = document.getElementById('data-inicio').value;
   const fim    = document.getElementById('data-fim').value;
+  if (!inicio||!fim) { alert('⚠️ Selecione a data inicial e final.'); return; }
+  if (inicio>fim)    { alert('⚠️ A data inicial não pode ser maior que a final.'); return; }
 
-  if (!inicio || !fim) { alert('⚠️ Selecione a data inicial e final.'); return; }
-  if (inicio > fim)    { alert('⚠️ A data inicial não pode ser maior que a final.'); return; }
+  document.getElementById('registros-container').innerHTML = `<div class="loading-tab"><div class="spinner"></div>Buscando registros…</div>`;
 
-  const container = document.getElementById('registros-container');
-  container.innerHTML = `<div class="loading-tab"><div class="spinner"></div>Buscando registros…</div>`;
-
-  // Gera lista de datas no período
   const datas = [];
-  const cur = new Date(inicio+'T12:00:00');
-  const end = new Date(fim+'T12:00:00');
-  while (cur <= end) {
-    datas.push(cur.toISOString().split('T')[0]);
-    cur.setDate(cur.getDate()+1);
-  }
+  const cur = new Date(inicio+'T12:00:00'), end = new Date(fim+'T12:00:00');
+  while (cur<=end) { datas.push(cur.toISOString().split('T')[0]); cur.setDate(cur.getDate()+1); }
 
-  // Busca todas as datas em paralelo
-  registrosPeriodo = [];
-  const promises = datas.map(d => get(ref(db,'registros/'+d)));
-  const snaps = await Promise.all(promises);
-  snaps.forEach(snap => {
-    const val = snap.val();
-    if (val) registrosPeriodo.push(...Object.values(val));
-  });
+  // Busca registros e ocorrências em paralelo
+  const [snapsReg, snapsOc] = await Promise.all([
+    Promise.all(datas.map(d=>get(ref(db,'registros/'+d)))),
+    Promise.all(datas.map(d=>get(ref(db,'ocorrencias/'+d))))
+  ]);
 
-  // Ordena por data e hora
-  registrosPeriodo.sort((a,b) => {
-    if (a.data !== b.data) return a.data.localeCompare(b.data);
-    return a.hora.localeCompare(b.hora);
-  });
+  const brutos = [];
+  snapsReg.forEach(s=>{ const v=s.val(); if(v) brutos.push(...Object.values(v)); });
 
-  // Resumo
-  const totalEntradas = registrosPeriodo.filter(r=>r.tipo==='entrada').length;
-  const totalSaidas   = registrosPeriodo.filter(r=>r.tipo==='saida').length;
+  // Monta mapa de ocorrências empId|data → valor
+  const ocMap = {};
+  snapsOc.forEach((s,i)=>{ const v=s.val(); if(v) Object.entries(v).forEach(([empId,oc])=>{ ocMap[empId+'|'+datas[i]]=oc; }); });
+
+  dadosConsolidados = consolidar(brutos).map(r=>({ ...r, ocorrencia: ocMap[r.empId+'|'+r.data]||'Normal' }));
+
   const resumo = document.getElementById('resumo-periodo');
   resumo.style.display = 'flex';
   resumo.innerHTML = `
     <span>📅 Período: <strong>${formatarData(inicio)} a ${formatarData(fim)}</strong></span>
-    <span>📋 Total de registros: <strong>${registrosPeriodo.length}</strong></span>
-    <span>✅ Entradas: <strong>${totalEntradas}</strong></span>
-    <span>🚪 Saídas: <strong>${totalSaidas}</strong></span>`;
+    <span>📋 Linhas: <strong>${dadosConsolidados.length}</strong></span>
+    <span>👥 Funcionários: <strong>${new Set(dadosConsolidados.map(r=>r.empId)).size}</strong></span>`;
 
-  if (!registrosPeriodo.length) {
-    container.innerHTML = `<div class="empty"><div class="icon">📋</div>Nenhum registro encontrado neste período.</div>`;
+  if (!dadosConsolidados.length) {
+    document.getElementById('registros-container').innerHTML = `<div class="empty"><div class="icon">📋</div>Nenhum registro encontrado neste período.</div>`;
     return;
   }
 
-  container.innerHTML = `
+  // Monta tabela com select de ocorrência em cada linha
+  const linhas = dadosConsolidados.map(r => {
+    const opcoes = ['Normal','Férias','Af. Doença','Falta','Outro'];
+    const classeSel = {Normal:'normal',Férias:'ferias','Af. Doença':'doenca',Falta:'falta',Outro:'outro'}[r.ocorrencia]||'normal';
+    const opcoesHtml = opcoes.map(o=>`<option value="${o}" ${o===r.ocorrencia?'selected':''}>${o}</option>`).join('');
+    return `<tr>
+      <td>${r.empId}</td>
+      <td><strong>${r.nome}</strong></td>
+      <td>${formatarData(r.data)}</td>
+      <td class="${r.entrada?'hora':'vazio'}">${r.entrada||'—'}</td>
+      <td class="${r.sAlmoco?'hora':'vazio'}">${r.sAlmoco||'—'}</td>
+      <td class="${r.vAlmoco?'hora':'vazio'}">${r.vAlmoco||'—'}</td>
+      <td class="${r.saida?'hora':'vazio'}">${r.saida||'—'}</td>
+      <td style="min-width:160px">
+        <select class="ocorrencia-sel ${classeSel}"
+          onchange="salvarOcorrencia('${r.empId}','${r.data}',this.value,this)"
+          title="Clique para alterar a ocorrência">
+          ${opcoesHtml}
+        </select>
+      </td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('registros-container').innerHTML = `
     <div class="tabela-wrap">
       <table>
-        <thead><tr><th>ID</th><th>Funcionário</th><th>Cargo</th><th>Tipo</th><th>Data</th><th>Hora</th></tr></thead>
-        <tbody>${registrosPeriodo.map(r=>`
-          <tr>
-            <td>${r.empId}</td>
-            <td><strong>${r.nome}</strong></td>
-            <td>${r.cargo||'—'}</td>
-            <td><span class="badge badge-${r.tipo}">${r.tipo==='entrada'?'✅ Entrada':'🚪 Saída'}</span></td>
-            <td>${formatarData(r.data)}</td>
-            <td>${r.hora}</td>
-          </tr>`).join('')}
-        </tbody>
+        <thead><tr>
+          <th>ID</th><th>Funcionário</th><th>Data</th>
+          <th>Entrada</th><th>S. Almoço</th><th>V. Almoço</th><th>Saída</th>
+          <th>Ocorrência ✏️</th>
+        </tr></thead>
+        <tbody>${linhas}</tbody>
       </table>
     </div>`;
 }
@@ -438,26 +467,25 @@ window.carregarPeriodo = async function() {
 window.exportarExcel = function() {
   const inicio = document.getElementById('data-inicio').value;
   const fim    = document.getElementById('data-fim').value;
+  if (!inicio||!fim) { alert('⚠️ Selecione o período e clique em Buscar primeiro.'); return; }
+  if (!dadosConsolidados.length) { alert('⚠️ Nenhum registro. Clique em Buscar primeiro.'); return; }
 
-  if (!inicio || !fim) { alert('⚠️ Selecione o período primeiro e clique em Buscar.'); return; }
-  if (!registrosPeriodo.length) { alert('⚠️ Nenhum registro para exportar. Clique em Buscar primeiro.'); return; }
+  // Pega ocorrências atuais dos selects da tela (caso tenham sido alteradas)
+  const selects = document.querySelectorAll('.ocorrencia-sel');
+  selects.forEach((sel,i)=>{ if(dadosConsolidados[i]) dadosConsolidados[i].ocorrencia = sel.value; });
 
-  // Monta dados para Excel
-  const dados = [['ID','Funcionário','Cargo','Tipo','Data','Hora']];
-  registrosPeriodo.forEach(r => {
-    dados.push([r.empId, r.nome, r.cargo||'', r.tipo==='entrada'?'Entrada':'Saída', formatarData(r.data), r.hora]);
+  const cab = ['ID','Funcionário','Cargo','Data','Entrada','S. Almoço','V. Almoço','Saída','Ocorrência'];
+  const linhas = [cab];
+  dadosConsolidados.forEach(r=>{
+    linhas.push([r.empId,r.nome,r.cargo,formatarData(r.data),r.entrada,r.sAlmoco,r.vAlmoco,r.saida,r.ocorrencia]);
   });
 
   const wb = XLSX.utils.book_new();
-  const ws = XLSX.utils.aoa_to_sheet(dados);
-
-  // Largura das colunas
-  ws['!cols'] = [
-    {wch:8},{wch:35},{wch:16},{wch:10},{wch:12},{wch:10}
-  ];
-
-  XLSX.utils.book_append_sheet(wb, ws, 'Registros de Ponto');
+  const ws = XLSX.utils.aoa_to_sheet(linhas);
+  ws['!cols'] = [{wch:8},{wch:36},{wch:16},{wch:12},{wch:10},{wch:10},{wch:10},{wch:10},{wch:14}];
+  XLSX.utils.book_append_sheet(wb, ws, 'Ponto');
   XLSX.writeFile(wb, `Ponto_BAMBAM_${formatarData(inicio).replace(/\//g,'-')}_a_${formatarData(fim).replace(/\//g,'-')}.xlsx`);
+  mostrarToast('📊 Excel exportado com sucesso!');
 }
 
 // ── FUNCIONÁRIOS ──
@@ -530,7 +558,6 @@ function mostrarToast(msg) {
   setTimeout(()=>{t.style.transform='translateX(-50%) translateY(80px)';},3200);
 }
 
-// Define período padrão (mês atual)
 definirMes();
 </script>
 </body>
