@@ -19,12 +19,11 @@
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;align-items:center;}
 
-/* TELA DE SENHA */
 #tela-senha{position:fixed;inset:0;background:linear-gradient(135deg,#1a1a2e,#0f3460);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px;}
 .senha-box{background:#16213e;border:1.5px solid #ffffff15;border-radius:22px;padding:32px;width:100%;max-width:340px;text-align:center;box-shadow:0 20px 60px #0008;}
 .senha-box .logo-s{font-size:3rem;margin-bottom:12px;}
 .senha-box h2{font-family:'Baloo 2',cursive;font-size:1.4rem;color:var(--rosa);margin-bottom:6px;}
-.senha-box p{font-size:.82rem;color:var(--sub);margin-bottom:24px;}
+.senha-box p{font-size:.82rem;color:var(--sub);margin-bottom:24px;line-height:1.5;}
 .senha-box input{width:100%;padding:13px 16px;border:1.5px solid #ffffff20;border-radius:12px;background:#0f3460;color:#f0f0f0;font-family:'Nunito',sans-serif;font-size:1.2rem;font-weight:700;text-align:center;letter-spacing:4px;margin-bottom:14px;}
 .senha-box input:focus{outline:none;border-color:var(--rosa);}
 .senha-box button{width:100%;padding:13px;border:none;border-radius:12px;background:linear-gradient(90deg,var(--rosa),var(--roxo));color:#fff;font-family:'Nunito',sans-serif;font-size:1rem;font-weight:800;cursor:pointer;transition:.15s;}
@@ -84,14 +83,13 @@ header h1{font-family:'Baloo 2',cursive;font-size:1.5rem;color:#fff;text-shadow:
 </head>
 <body>
 
-<!-- TELA DE SENHA -->
 <div id="tela-senha">
   <div class="senha-box">
     <div class="logo-s">🍼</div>
     <h2>BAMBAM BABY</h2>
-    <p>Digite a senha para acessar o sistema de ponto</p>
+    <p>Digite a senha para autorizar este dispositivo</p>
     <input type="password" id="input-senha" placeholder="••••••" onkeydown="if(event.key==='Enter')verificarSenha()">
-    <button onclick="verificarSenha()">🔓 Entrar</button>
+    <button onclick="verificarSenha()">🔓 Autorizar dispositivo</button>
     <div class="erro" id="erro-senha">❌ Senha incorreta!</div>
   </div>
 </div>
@@ -147,42 +145,38 @@ header h1{font-family:'Baloo 2',cursive;font-size:1.5rem;color:#fff;text-shadow:
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getDatabase, ref, onValue, push, set, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-const firebaseConfig = {
-  apiKey:"AIzaSyDQ6EUH_HBLYd76HMCdlgupNcwzTHvgido",
-  authDomain:"bambam-ponto.firebaseapp.com",
-  databaseURL:"https://bambam-ponto-default-rtdb.firebaseio.com",
-  projectId:"bambam-ponto",
-  storageBucket:"bambam-ponto.firebasestorage.app",
-  messagingSenderId:"30916647304",
-  appId:"1:30916647304:web:70323b427dbdd0e51d423d"
-};
+const firebaseConfig={apiKey:"AIzaSyDQ6EUH_HBLYd76HMCdlgupNcwzTHvgido",authDomain:"bambam-ponto.firebaseapp.com",databaseURL:"https://bambam-ponto-default-rtdb.firebaseio.com",projectId:"bambam-ponto",storageBucket:"bambam-ponto.firebasestorage.app",messagingSenderId:"30916647304",appId:"1:30916647304:web:70323b427dbdd0e51d423d"};
 const app=initializeApp(firebaseConfig);
 const db=getDatabase(app);
-
-const PADRAO=[
-  {id:'EMP001',nome:'ADILSON DO CARMO MACHADO',cargo:'Colaborador'},
-  {id:'EMP002',nome:'ANA LUIZA SECO SILVA DE OLIVEIRA',cargo:'Colaboradora'},
-  {id:'EMP003',nome:'ANA PAULA ZULATO PEREIRA',cargo:'Colaboradora'},
-  {id:'EMP004',nome:'BEUTIMAR ANA HELENA DA SILVA',cargo:'Colaboradora'},
-  {id:'EMP005',nome:'ERIKA CRISTINA DA SILVA',cargo:'Colaboradora'},
-  {id:'EMP006',nome:'FABIANA ANICETO FERREIRA',cargo:'Colaboradora'},
-  {id:'EMP007',nome:'JOSILANE LEANDRO VENTURA',cargo:'Colaboradora'},
-  {id:'EMP008',nome:'SERGIO SOARES RAMOS',cargo:'Colaborador'},
-  {id:'EMP009',nome:'SILVANA APARECIDA DA SILVA MEDEIROS',cargo:'Colaboradora'},
-  {id:'EMP010',nome:'THAYLLON SALAZAR RAMOS BERNARDINO',cargo:'Colaborador'},
-  {id:'EMP011',nome:'PABLO ANDERSON MODESTO JUVENAL',cargo:'Colaborador'},
-];
 
 let funcionarios={},logHoje=[],funcSel=null,tipoEsc=null,bloqueado=false,ultimoCache={};
 const dh=()=>new Date().toISOString().split('T')[0];
 const ini=(n)=>{const p=n.trim().split(' ');return(p[0][0]+(p[1]?.[0]||'')).toUpperCase();};
 
-// ── SENHA ──
+// ── AUTORIZAÇÃO DO DISPOSITIVO ──
+// Salva a senha no localStorage do dispositivo
+// Se a senha mudar no Firebase, o dispositivo precisa digitar de novo
+
+async function checarAutorizacao(){
+  const snap=await get(ref(db,'config/senha_index'));
+  const senhaAtual=snap.val()||'102030';
+  const senhaSalva=localStorage.getItem('bambam_senha_index');
+
+  if(senhaSalva===senhaAtual){
+    // Dispositivo já autorizado com a senha atual
+    document.getElementById('tela-senha').style.display='none';
+    iniciarApp();
+  }
+  // Se senha mudou ou nunca foi digitada, mostra tela de senha
+}
+
 window.verificarSenha=async function(){
   const digitada=document.getElementById('input-senha').value.trim();
   const snap=await get(ref(db,'config/senha_index'));
   const correta=snap.val()||'102030';
   if(digitada===correta){
+    // Salva senha no dispositivo para não pedir de novo
+    localStorage.setItem('bambam_senha_index',correta);
     document.getElementById('tela-senha').style.display='none';
     iniciarApp();
   } else {
@@ -193,7 +187,6 @@ window.verificarSenha=async function(){
 };
 
 function iniciarApp(){
-  // RELÓGIO
   function tick(){
     const now=new Date();
     document.getElementById('clock').textContent=now.toLocaleTimeString('pt-BR');
@@ -202,14 +195,11 @@ function iniciarApp(){
   tick(); setInterval(tick,1000);
   document.getElementById('wifi-badge').textContent='✅ Online';
 
-  // FUNCIONÁRIOS
   onValue(ref(db,'funcionarios'),snap=>{
     const d=snap.val(); funcionarios={};
     if(d){Object.values(d).forEach(f=>{funcionarios[f.id]=f;});}
-    else{PADRAO.forEach(f=>{funcionarios[f.id]=f;set(ref(db,'funcionarios/'+f.id),f);});}
   });
 
-  // LOG HOJE
   onValue(ref(db,'registros/'+dh()),snap=>{
     logHoje=[]; const d=snap.val();
     if(d) logHoje=Object.values(d);
@@ -260,7 +250,6 @@ window.abrirModal=async function(empId){
   const ultimo=await buscarUltimo(f.id);
   ultimoCache[empId]=ultimo;
 
-  // Bloqueio 5 minutos
   if(ultimo&&ultimo.timestamp){
     const diff=(new Date()-new Date(ultimo.timestamp))/1000/60;
     if(diff<5){
@@ -341,9 +330,12 @@ function mostrarToast(msg,cor){
   setTimeout(()=>{t.style.transform='translateX(-50%) translateY(80px)';},4000);
 }
 
-// Salva senha padrão se não existir
+// Salva senhas padrão se não existirem
 get(ref(db,'config/senha_index')).then(s=>{if(!s.val())set(ref(db,'config/senha_index'),'102030');});
 get(ref(db,'config/senha_admin')).then(s=>{if(!s.val())set(ref(db,'config/senha_admin'),'Bam102030');});
+
+// Checa autorização ao iniciar
+checarAutorizacao();
 </script>
 </body>
 </html>
