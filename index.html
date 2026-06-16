@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -16,13 +15,22 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;900&family=Baloo+2:wght@700;800&display=swap');
-:root {
-  --rosa:#FF6B9D; --roxo:#C678DD; --azul:#61AFEF; --verde:#98C379;
-  --amarelo:#E5C07B; --bg:#1a1a2e; --card:#16213e; --card2:#0f3460;
-  --text:#f0f0f0; --sub:#a0aec0; --radius:18px;
-}
+:root{--rosa:#FF6B9D;--roxo:#C678DD;--azul:#61AFEF;--verde:#98C379;--amarelo:#E5C07B;--bg:#1a1a2e;--card:#16213e;--card2:#0f3460;--text:#f0f0f0;--sub:#a0aec0;--radius:18px;}
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;align-items:center;}
+
+/* TELA DE SENHA */
+#tela-senha{position:fixed;inset:0;background:linear-gradient(135deg,#1a1a2e,#0f3460);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px;}
+.senha-box{background:#16213e;border:1.5px solid #ffffff15;border-radius:22px;padding:32px;width:100%;max-width:340px;text-align:center;box-shadow:0 20px 60px #0008;}
+.senha-box .logo-s{font-size:3rem;margin-bottom:12px;}
+.senha-box h2{font-family:'Baloo 2',cursive;font-size:1.4rem;color:var(--rosa);margin-bottom:6px;}
+.senha-box p{font-size:.82rem;color:var(--sub);margin-bottom:24px;}
+.senha-box input{width:100%;padding:13px 16px;border:1.5px solid #ffffff20;border-radius:12px;background:#0f3460;color:#f0f0f0;font-family:'Nunito',sans-serif;font-size:1.2rem;font-weight:700;text-align:center;letter-spacing:4px;margin-bottom:14px;}
+.senha-box input:focus{outline:none;border-color:var(--rosa);}
+.senha-box button{width:100%;padding:13px;border:none;border-radius:12px;background:linear-gradient(90deg,var(--rosa),var(--roxo));color:#fff;font-family:'Nunito',sans-serif;font-size:1rem;font-weight:800;cursor:pointer;transition:.15s;}
+.senha-box button:hover{opacity:.88;}
+.erro{color:#ff4d6d;font-size:.82rem;margin-top:10px;display:none;font-weight:700;}
+
 header{width:100%;background:linear-gradient(135deg,#C678DD,#FF6B9D);padding:18px 24px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 4px 20px #FF6B9D55;}
 header h1{font-family:'Baloo 2',cursive;font-size:1.5rem;color:#fff;text-shadow:0 2px 8px #0005;}
 .badge{background:#fff3;border:1.5px solid #fff6;border-radius:30px;padding:4px 14px;font-size:.78rem;font-weight:700;color:#fff;}
@@ -76,6 +84,18 @@ header h1{font-family:'Baloo 2',cursive;font-size:1.5rem;color:#fff;text-shadow:
 </head>
 <body>
 
+<!-- TELA DE SENHA -->
+<div id="tela-senha">
+  <div class="senha-box">
+    <div class="logo-s">🍼</div>
+    <h2>BAMBAM BABY</h2>
+    <p>Digite a senha para acessar o sistema de ponto</p>
+    <input type="password" id="input-senha" placeholder="••••••" onkeydown="if(event.key==='Enter')verificarSenha()">
+    <button onclick="verificarSenha()">🔓 Entrar</button>
+    <div class="erro" id="erro-senha">❌ Senha incorreta!</div>
+  </div>
+</div>
+
 <header>
   <h1>🍼 BAMBAM BABY</h1>
   <span class="badge" id="wifi-badge">Conectando…</span>
@@ -102,8 +122,8 @@ header h1{font-family:'Baloo 2',cursive;font-size:1.5rem;color:#fff;text-shadow:
   <div class="modal">
     <div id="step1">
       <div class="emp-avatar" id="av1"></div>
-      <div class="emp-nome"   id="nm1">—</div>
-      <div class="emp-cargo"  id="cg1">—</div>
+      <div class="emp-nome" id="nm1">—</div>
+      <div class="emp-cargo" id="cg1">—</div>
       <div class="ultimo-box" id="ultimo-box">🔍 Buscando…</div>
       <div class="pergunta">O que deseja registrar agora?</div>
       <div class="escolha-grid">
@@ -114,8 +134,8 @@ header h1{font-family:'Baloo 2',cursive;font-size:1.5rem;color:#fff;text-shadow:
     </div>
     <div id="step2" style="display:none">
       <div class="emp-avatar" id="av2"></div>
-      <div class="emp-nome"   id="nm2">—</div>
-      <div class="emp-cargo"  id="cg2">—</div>
+      <div class="emp-nome" id="nm2">—</div>
+      <div class="emp-cargo" id="cg2">—</div>
       <div class="confirma-box" id="confirma-box"></div>
       <button class="btn" id="btn-confirmar" onclick="confirmarPonto()">Confirmar</button>
       <button class="btn btn-voltar" onclick="voltarStep1()">← Voltar e escolher de novo</button>
@@ -128,18 +148,18 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/fireba
 import { getDatabase, ref, onValue, push, set, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDQ6EUH_HBLYd76HMCdlgupNcwzTHvgido",
-  authDomain: "bambam-ponto.firebaseapp.com",
-  databaseURL: "https://bambam-ponto-default-rtdb.firebaseio.com",
-  projectId: "bambam-ponto",
-  storageBucket: "bambam-ponto.firebasestorage.app",
-  messagingSenderId: "30916647304",
-  appId: "1:30916647304:web:70323b427dbdd0e51d423d"
+  apiKey:"AIzaSyDQ6EUH_HBLYd76HMCdlgupNcwzTHvgido",
+  authDomain:"bambam-ponto.firebaseapp.com",
+  databaseURL:"https://bambam-ponto-default-rtdb.firebaseio.com",
+  projectId:"bambam-ponto",
+  storageBucket:"bambam-ponto.firebasestorage.app",
+  messagingSenderId:"30916647304",
+  appId:"1:30916647304:web:70323b427dbdd0e51d423d"
 };
-const app = initializeApp(firebaseConfig);
-const db  = getDatabase(app);
+const app=initializeApp(firebaseConfig);
+const db=getDatabase(app);
 
-const PADRAO = [
+const PADRAO=[
   {id:'EMP001',nome:'ADILSON DO CARMO MACHADO',cargo:'Colaborador'},
   {id:'EMP002',nome:'ANA LUIZA SECO SILVA DE OLIVEIRA',cargo:'Colaboradora'},
   {id:'EMP003',nome:'ANA PAULA ZULATO PEREIRA',cargo:'Colaboradora'},
@@ -153,30 +173,51 @@ const PADRAO = [
   {id:'EMP011',nome:'PABLO ANDERSON MODESTO JUVENAL',cargo:'Colaborador'},
 ];
 
-let funcionarios={}, logHoje=[], funcSel=null, tipoEsc=null, bloqueado=false;
-function dataHoje(){return new Date().toISOString().split('T')[0];}
-function iniciais(n){const p=n.trim().split(' ');return(p[0][0]+(p[1]?.[0]||'')).toUpperCase();}
+let funcionarios={},logHoje=[],funcSel=null,tipoEsc=null,bloqueado=false,ultimoCache={};
+const dh=()=>new Date().toISOString().split('T')[0];
+const ini=(n)=>{const p=n.trim().split(' ');return(p[0][0]+(p[1]?.[0]||'')).toUpperCase();};
 
-function tick(){
-  const now=new Date();
-  document.getElementById('clock').textContent=now.toLocaleTimeString('pt-BR');
-  document.getElementById('date-str').textContent=now.toLocaleDateString('pt-BR',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+// ── SENHA ──
+window.verificarSenha=async function(){
+  const digitada=document.getElementById('input-senha').value.trim();
+  const snap=await get(ref(db,'config/senha_index'));
+  const correta=snap.val()||'102030';
+  if(digitada===correta){
+    document.getElementById('tela-senha').style.display='none';
+    iniciarApp();
+  } else {
+    document.getElementById('erro-senha').style.display='block';
+    document.getElementById('input-senha').value='';
+    setTimeout(()=>{document.getElementById('erro-senha').style.display='none';},3000);
+  }
+};
+
+function iniciarApp(){
+  // RELÓGIO
+  function tick(){
+    const now=new Date();
+    document.getElementById('clock').textContent=now.toLocaleTimeString('pt-BR');
+    document.getElementById('date-str').textContent=now.toLocaleDateString('pt-BR',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  }
+  tick(); setInterval(tick,1000);
+  document.getElementById('wifi-badge').textContent='✅ Online';
+
+  // FUNCIONÁRIOS
+  onValue(ref(db,'funcionarios'),snap=>{
+    const d=snap.val(); funcionarios={};
+    if(d){Object.values(d).forEach(f=>{funcionarios[f.id]=f;});}
+    else{PADRAO.forEach(f=>{funcionarios[f.id]=f;set(ref(db,'funcionarios/'+f.id),f);});}
+  });
+
+  // LOG HOJE
+  onValue(ref(db,'registros/'+dh()),snap=>{
+    logHoje=[]; const d=snap.val();
+    if(d) logHoje=Object.values(d);
+    renderLog();
+  });
+
+  iniciarScanner();
 }
-tick(); setInterval(tick,1000);
-
-document.getElementById('wifi-badge').textContent='✅ Online';
-
-onValue(ref(db,'funcionarios'),snap=>{
-  const d=snap.val(); funcionarios={};
-  if(d){Object.values(d).forEach(f=>{funcionarios[f.id]=f;});}
-  else{PADRAO.forEach(f=>{funcionarios[f.id]=f;set(ref(db,'funcionarios/'+f.id),f);});}
-});
-
-onValue(ref(db,'registros/'+dataHoje()),snap=>{
-  logHoje=[]; const d=snap.val();
-  if(d) logHoje=Object.values(d);
-  renderLog();
-});
 
 function renderLog(){
   const list=document.getElementById('log-list');
@@ -191,7 +232,7 @@ function renderLog(){
 
 let scannerAtivo=false;
 function iniciarScanner(){
-  if(scannerAtivo) return; scannerAtivo=true;
+  if(scannerAtivo)return; scannerAtivo=true;
   const qr=new Html5Qrcode("reader");
   qr.start({facingMode:"environment"},{fps:10,qrbox:{width:210,height:210}},
     txt=>{if(!bloqueado){bloqueado=true;abrirModal(txt);setTimeout(()=>{bloqueado=false;},5000);}},
@@ -200,7 +241,6 @@ function iniciarScanner(){
     document.getElementById('reader').innerHTML='<p style="color:var(--sub);padding:20px;text-align:center;font-size:.85rem">📵 Câmera não disponível.<br>Certifique-se de usar HTTPS.</p>';
   });
 }
-iniciarScanner();
 
 async function buscarUltimo(empId){
   const hoje=new Date();
@@ -214,43 +254,33 @@ async function buscarUltimo(empId){
   return null;
 }
 
-// Guarda o último registro de cada funcionário em memória para bloqueio rápido
-let ultimoRegistroCache={};
-
 window.abrirModal=async function(empId){
   const f=funcionarios[empId];
-  if(!f){mostrarToast('❌ Crachá não reconhecido no sistema.','#ff4d6d');return;}
-
-  // Busca último registro
+  if(!f){mostrarToast('❌ Crachá não reconhecido.','#ff4d6d');return;}
   const ultimo=await buscarUltimo(f.id);
-  ultimoRegistroCache[empId]=ultimo;
+  ultimoCache[empId]=ultimo;
 
-  // Verifica bloqueio de 5 minutos
-  if(ultimo && ultimo.timestamp){
-    const agora=new Date();
-    const ultTime=new Date(ultimo.timestamp);
-    const diffMin=(agora-ultTime)/1000/60;
-    if(diffMin<5){
-      const restante=Math.ceil(5-diffMin);
-      mostrarToast(`⏱️ ${f.nome.split(' ')[0]} já registrou há menos de 5 min. Aguarde ${restante} min.`,'#E5C07B');
+  // Bloqueio 5 minutos
+  if(ultimo&&ultimo.timestamp){
+    const diff=(new Date()-new Date(ultimo.timestamp))/1000/60;
+    if(diff<5){
+      const rest=Math.ceil(5-diff);
+      mostrarToast(`⏱️ ${f.nome.split(' ')[0]} aguarde ${rest} min.`,'#E5C07B');
       return;
     }
   }
 
   funcSel=f; tipoEsc=null;
-  document.getElementById('av1').textContent=iniciais(f.nome);
+  document.getElementById('av1').textContent=ini(f.nome);
   document.getElementById('nm1').textContent=f.nome;
   document.getElementById('cg1').textContent='🪪 '+f.id+' · '+(f.cargo||'Colaborador');
   document.getElementById('step1').style.display='block';
   document.getElementById('step2').style.display='none';
   document.getElementById('modal').classList.add('open');
 
-  // Mostra último registro e desativa botão igual ao último
   const box=document.getElementById('ultimo-box');
   const btnE=document.querySelector('.btn-e');
   const btnS=document.querySelector('.btn-s');
-
-  // Reativa os dois botões primeiro
   btnE.disabled=false; btnE.style.opacity='1'; btnE.style.cursor='pointer';
   btnS.disabled=false; btnS.style.opacity='1'; btnS.style.cursor='pointer';
 
@@ -258,37 +288,25 @@ window.abrirModal=async function(empId){
     box.className='ultimo-box ultimo-nenhum';
     box.innerHTML='📋 Nenhum registro anterior encontrado.';
   } else {
-    const ehHoje=ultimo.data===dataHoje();
+    const ehHoje=ultimo.data===dh();
     const quando=ehHoje?'hoje':'em '+ultimo.data.split('-').reverse().join('/');
     if(ultimo.tipo==='entrada'){
       box.className='ultimo-box ultimo-entrada';
       box.innerHTML=`Último registro:<strong>✅ ENTRADA ${quando} às ${ultimo.hora}</strong>`;
-      // Bloqueia botão ENTRADA (não pode entrar duas vezes seguidas)
-      btnE.disabled=true;
-      btnE.style.opacity='.35';
-      btnE.style.cursor='not-allowed';
-      btnE.title='Já registrou ENTRADA — registre SAÍDA primeiro';
+      btnE.disabled=true; btnE.style.opacity='.35'; btnE.style.cursor='not-allowed';
     } else {
       box.className='ultimo-box ultimo-saida';
       box.innerHTML=`Último registro:<strong>🚪 SAÍDA ${quando} às ${ultimo.hora}</strong>`;
-      // Bloqueia botão SAÍDA (não pode sair duas vezes seguidas)
-      btnS.disabled=true;
-      btnS.style.opacity='.35';
-      btnS.style.cursor='not-allowed';
-      btnS.title='Já registrou SAÍDA — registre ENTRADA primeiro';
+      btnS.disabled=true; btnS.style.opacity='.35'; btnS.style.cursor='not-allowed';
     }
   }
-}
+};
 
 window.escolher=function(tipo){
-  // Verificação extra de segurança
-  const ultimo=ultimoRegistroCache[funcSel?.id];
-  if(ultimo && ultimo.tipo===tipo){
-    mostrarToast(`⚠️ Não é possível registrar ${tipo==='entrada'?'ENTRADA':'SAÍDA'} duas vezes seguidas!`,'#E5C07B');
-    return;
-  }
-  tipoEsc=tipo; const f=funcSel, agora=new Date().toLocaleTimeString('pt-BR');
-  document.getElementById('av2').textContent=iniciais(f.nome);
+  const ultimo=ultimoCache[funcSel?.id];
+  if(ultimo&&ultimo.tipo===tipo){mostrarToast(`⚠️ Não pode registrar ${tipo} duas vezes seguidas!`,'#E5C07B');return;}
+  tipoEsc=tipo; const f=funcSel,agora=new Date().toLocaleTimeString('pt-BR');
+  document.getElementById('av2').textContent=ini(f.nome);
   document.getElementById('nm2').textContent=f.nome;
   document.getElementById('cg2').textContent='🪪 '+f.id+' · '+(f.cargo||'Colaborador');
   const box=document.getElementById('confirma-box'),btn=document.getElementById('btn-confirmar');
@@ -296,23 +314,23 @@ window.escolher=function(tipo){
   else{box.className='confirma-box confirma-saida';box.innerHTML=`Você está registrando:<br><strong>🚪 SAÍDA às ${agora}</strong>`;btn.className='btn btn-rosa-solid';btn.innerHTML='🚪 Confirmar SAÍDA';}
   document.getElementById('step1').style.display='none';
   document.getElementById('step2').style.display='block';
-}
+};
 
-window.voltarStep1=function(){tipoEsc=null;document.getElementById('step1').style.display='block';document.getElementById('step2').style.display='none';}
+window.voltarStep1=function(){tipoEsc=null;document.getElementById('step1').style.display='block';document.getElementById('step2').style.display='none';};
 
 window.confirmarPonto=async function(){
-  if(!funcSel||!tipoEsc) return;
+  if(!funcSel||!tipoEsc)return;
   const f=funcSel,agora=new Date();
-  const reg={empId:f.id,nome:f.nome,cargo:f.cargo||'Colaborador',tipo:tipoEsc,data:dataHoje(),hora:agora.toLocaleTimeString('pt-BR'),timestamp:agora.toISOString()};
+  const reg={empId:f.id,nome:f.nome,cargo:f.cargo||'Colaborador',tipo:tipoEsc,data:dh(),hora:agora.toLocaleTimeString('pt-BR'),timestamp:agora.toISOString()};
   try{
-    await push(ref(db,'registros/'+dataHoje()),reg);
-    if(navigator.vibrate) navigator.vibrate([80,40,80]);
+    await push(ref(db,'registros/'+dh()),reg);
+    if(navigator.vibrate)navigator.vibrate([80,40,80]);
     fecharModal();
     mostrarToast(tipoEsc==='entrada'?`✅ Boa chegada, ${f.nome.split(' ')[0]}!`:`👋 Até logo, ${f.nome.split(' ')[0]}!`,tipoEsc==='entrada'?'#98C379':'#FF6B9D');
-  }catch(e){alert('❌ Erro ao registrar. Verifique a conexão.');}
-}
+  }catch(e){alert('❌ Erro ao registrar.');}
+};
 
-window.fecharModal=function(){document.getElementById('modal').classList.remove('open');funcSel=null;tipoEsc=null;}
+window.fecharModal=function(){document.getElementById('modal').classList.remove('open');funcSel=null;tipoEsc=null;};
 document.getElementById('modal').addEventListener('click',function(e){if(e.target===this)fecharModal();});
 
 function mostrarToast(msg,cor){
@@ -322,6 +340,10 @@ function mostrarToast(msg,cor){
   setTimeout(()=>{t.style.transform='translateX(-50%) translateY(0)';},10);
   setTimeout(()=>{t.style.transform='translateX(-50%) translateY(80px)';},4000);
 }
+
+// Salva senha padrão se não existir
+get(ref(db,'config/senha_index')).then(s=>{if(!s.val())set(ref(db,'config/senha_index'),'102030');});
+get(ref(db,'config/senha_admin')).then(s=>{if(!s.val())set(ref(db,'config/senha_admin'),'Bam102030');});
 </script>
 </body>
 </html>
