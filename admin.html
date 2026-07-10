@@ -1,0 +1,1253 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BAMBAM BABY – Admin</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&display=swap');
+:root{--rosa:#F472B6;--rosa-d:#DB2777;--verde:#16A34A;--cinza:#F8F8FA;--borda:#E5E7EB;--texto:#1F2937;--sub:#6B7280;--vermelho:#DC2626;--azul:#3B82F6;--laranja:#F59E0B;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Montserrat',sans-serif;background:#F0F2F5;color:var(--texto);min-height:100vh;}
+
+#tela-senha{position:fixed;inset:0;background:linear-gradient(135deg,#1a1a2e,#0f3460);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px;}
+.senha-box{background:#16213e;border:1.5px solid #ffffff15;border-radius:22px;padding:32px;width:100%;max-width:340px;text-align:center;box-shadow:0 20px 60px #0008;}
+.senha-box .logo-s{font-size:3rem;margin-bottom:12px;}
+.senha-box h2{font-size:1.3rem;font-weight:900;color:#F472B6;margin-bottom:6px;}
+.senha-box p{font-size:.82rem;color:#a0aec0;margin-bottom:24px;}
+.senha-box input{width:100%;padding:13px 16px;border:1.5px solid #ffffff20;border-radius:12px;background:#0f3460;color:#f0f0f0;font-family:'Montserrat',sans-serif;font-size:1.1rem;font-weight:700;text-align:center;letter-spacing:4px;margin-bottom:14px;}
+.senha-box input:focus{outline:none;border-color:#F472B6;}
+.senha-box button{width:100%;padding:13px;border:none;border-radius:12px;background:linear-gradient(135deg,#F472B6,#DB2777);color:#fff;font-family:'Montserrat',sans-serif;font-size:1rem;font-weight:800;cursor:pointer;}
+.erro{color:#ff4d6d;font-size:.82rem;margin-top:10px;display:none;font-weight:700;}
+
+header{background:#fff;border-bottom:2px solid var(--borda);padding:16px 28px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+.logo{width:44px;height:44px;background:linear-gradient(135deg,var(--rosa),var(--rosa-d));border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;}
+.hl{display:flex;align-items:center;gap:14px;}
+header h1{font-size:1.1rem;font-weight:900;}
+header p{font-size:.75rem;color:var(--sub);margin-top:2px;}
+.live{display:flex;align-items:center;gap:6px;background:#F0FDF4;border:1px solid #86EFAC;padding:6px 14px;border-radius:20px;font-size:.75rem;font-weight:700;color:var(--verde);}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--verde);animation:pulse 1.5s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+.tabs{display:flex;gap:4px;background:#fff;border-bottom:2px solid var(--borda);padding:0 20px;overflow-x:auto;}
+.tab{padding:13px 16px;border:none;background:none;cursor:pointer;font-family:'Montserrat',sans-serif;font-size:.82rem;font-weight:700;color:var(--sub);border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap;transition:.15s;}
+.tab:hover{color:var(--rosa-d);}
+.tab.active{color:var(--rosa-d);border-bottom-color:var(--rosa-d);}
+
+main{max-width:1300px;margin:0 auto;padding:24px 16px 80px;}
+.pg{display:none;}
+.pg.active{display:block;}
+.card{background:#fff;border-radius:16px;padding:24px;border:1.5px solid var(--borda);box-shadow:0 2px 12px #0001;margin-bottom:20px;}
+.card h2{font-size:1rem;font-weight:800;margin-bottom:18px;display:flex;align-items:center;gap:8px;}
+
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px;}
+.stat{background:#fff;border-radius:14px;padding:16px;border:1.5px solid var(--borda);text-align:center;}
+.stat .n{font-size:1.8rem;font-weight:900;}
+.stat .l{font-size:.7rem;color:var(--sub);font-weight:600;margin-top:4px;text-transform:uppercase;letter-spacing:.6px;}
+.sr .n{color:var(--rosa-d)}.sv .n{color:var(--verde)}.sa .n{color:var(--azul)}.sc .n{color:var(--sub)}
+
+.tw{overflow-x:auto;border-radius:12px;border:1.5px solid var(--borda);}
+table{width:100%;border-collapse:separate;border-spacing:0;font-size:.78rem;}
+th{background:#F3F4F6;padding:8px 10px;text-align:left;font-size:.65rem;text-transform:uppercase;letter-spacing:.6px;color:var(--sub);border-bottom:2px solid var(--borda);white-space:nowrap;}
+td{padding:8px 10px;border-bottom:1px solid var(--borda);white-space:nowrap;}
+tr:last-child td{border-bottom:none;}
+
+/* STICKY COLS */
+th.sn,td.sn{position:sticky;left:0;z-index:2;background:#F3F4F6;}
+th.so,td.so{position:sticky;right:0;z-index:2;background:#F3F4F6;border-left:1.5px solid var(--borda);}
+tr.ln td{background:#fff;} tr.ln td.sn{background:#fff;} tr.ln td.so{background:#fff;}
+tr.lf td{background:#FEF2F2;} tr.lf td.sn{background:#FEF2F2;} tr.lf td.so{background:#FEF2F2;}
+tr.la td{background:#EFF6FF;} tr.la td.sn{background:#EFF6FF;} tr.la td.so{background:#EFF6FF;}
+tr.lfr td{background:#F0FDF4;} tr.lfr td.sn{background:#F0FDF4;} tr.lfr td.so{background:#F0FDF4;}
+tr.le td{background:#FFFBEB;} tr.le td.sn{background:#FFFBEB;} tr.le td.so{background:#FFFBEB;}
+tr:hover td{filter:brightness(.97);}
+
+td.hora{font-family:monospace;font-weight:700;}
+td.vazio{color:#D1D5DB;font-style:italic;}
+td.horas{font-family:monospace;font-weight:700;color:var(--verde);}
+td.exc-cell{color:#92400E;font-family:monospace;font-size:.75rem;}
+
+.badge{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:20px;font-size:.65rem;font-weight:700;}
+.be{background:#F0FDF4;color:var(--verde);border:1px solid #86EFAC;}
+.bsa{background:#FFF0F6;color:var(--rosa-d);border:1px solid #FECDD3;}
+.bex{background:#FEF3C7;color:#92400E;border:1px solid #FCD34D;}
+.bds{background:#FEE2E2;color:var(--vermelho);border:1px solid #FCA5A5;}
+
+.fp{background:var(--cinza);border-radius:12px;padding:18px;border:1.5px solid var(--borda);margin-bottom:20px;}
+.fp h3{font-size:.85rem;font-weight:800;margin-bottom:14px;}
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
+@media(max-width:480px){.fg{grid-template-columns:1fr}}
+.ff{display:flex;flex-direction:column;gap:5px;}
+.ff label{font-size:.72rem;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.6px;}
+.ff input[type=date],.ff select{padding:10px 14px;border:1.5px solid var(--borda);border-radius:10px;font-family:'Montserrat',sans-serif;font-size:.88rem;background:#fff;color:var(--texto);width:100%;}
+.ff input:focus,.ff select:focus{outline:none;border-color:var(--rosa);}
+.fa{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+
+.rb{background:#F0FDF4;border:1.5px solid #86EFAC;border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:.82rem;font-weight:600;color:var(--verde);display:flex;flex-wrap:wrap;gap:16px;align-items:center;}
+.rb span strong{color:var(--texto);}
+
+.os{padding:4px 8px;border:1.5px solid var(--borda);border-radius:8px;font-family:'Montserrat',sans-serif;font-size:.7rem;font-weight:700;cursor:pointer;background:var(--cinza);color:var(--texto);min-width:110px;}
+.os:focus{outline:none;border-color:var(--rosa);}
+.os.normal{background:#F0FDF4;color:#15803D;border-color:#86EFAC;}
+.os.ferias{background:#EFF6FF;color:#1D4ED8;border-color:#93C5FD;}
+.os.doenca{background:#FEF3C7;color:#92400E;border-color:#FCD34D;}
+.os.falta{background:#FEE2E2;color:var(--vermelho);border-color:#FCA5A5;}
+.os.licenca{background:#F3E8FF;color:#7C3AED;border-color:#C4B5FD;}
+.os.atestado{background:#FFF7ED;color:#C2410C;border-color:#FDBA74;}
+.os.feriado{background:#F0FDF4;color:#15803D;border-color:#86EFAC;}
+.os.folga{background:#F3F4F6;color:var(--sub);}
+.os.excecao{background:#FEF3C7;color:#92400E;border-color:#FCD34D;}
+.os.outro{background:#F3F4F6;color:var(--sub);}
+
+.fg2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+@media(max-width:560px){.fg2{grid-template-columns:1fr}}
+.fi{display:flex;flex-direction:column;gap:5px;}
+.fi label{font-size:.75rem;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.8px;}
+.fi input,.fi select{padding:10px 14px;border:1.5px solid var(--borda);border-radius:10px;font-family:'Montserrat',sans-serif;font-size:.88rem;color:var(--texto);background:var(--cinza);transition:border-color .2s;}
+.fi input:focus,.fi select:focus{outline:none;border-color:var(--rosa);background:#fff;}
+
+.btn{padding:10px 20px;border:none;border-radius:10px;font-family:'Montserrat',sans-serif;font-size:.88rem;font-weight:700;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;gap:7px;}
+.btn:hover{opacity:.88;transform:translateY(-1px);}
+.br{background:linear-gradient(135deg,var(--rosa),var(--rosa-d));color:#fff;box-shadow:0 4px 14px #F472B644;}
+.bv{background:#DCFCE7;color:var(--verde);border:1.5px solid #86EFAC;}
+.bp{background:#FEE2E2;color:var(--vermelho);border:1.5px solid #FCA5A5;}
+.bc{background:#F3F4F6;color:var(--sub);}
+.bx{background:#217346;color:#fff;}
+.bsm{padding:7px 12px;font-size:.78rem;border-radius:8px;}
+.bds-btn{background:#FEE2E2;color:var(--vermelho);border:1.5px solid #FCA5A5;}
+
+.el{display:flex;flex-direction:column;gap:10px;}
+.er{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:12px;border:1.5px solid var(--borda);background:var(--cinza);transition:border-color .2s;}
+.er:hover{border-color:var(--rosa);background:#fff;}
+.er.desligado{opacity:.6;border-style:dashed;}
+.av{width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,#FFDCE8,#FFF0F6);border:2px solid var(--borda);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:900;color:var(--rosa-d);}
+.ei{flex:1;min-width:0;}
+.ei .nm{font-size:.88rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ei .mt{font-size:.7rem;color:var(--sub);margin-top:2px;display:flex;gap:8px;flex-wrap:wrap;}
+.ea{display:flex;gap:6px;flex-shrink:0;}
+.cb{display:inline-block;padding:2px 8px;border-radius:20px;font-size:.65rem;font-weight:700;background:#FFF0F6;color:var(--rosa-d);border:1px solid #FECDD3;}
+.spp{color:var(--verde)!important;font-weight:700;}
+.jt{background:#EFF6FF;color:#1D4ED8;border:1px solid #93C5FD;display:inline-block;padding:2px 8px;border-radius:20px;font-size:.62rem;font-weight:700;}
+.dt{background:#FEE2E2;color:var(--vermelho);border:1px solid #FCA5A5;display:inline-block;padding:2px 8px;border-radius:20px;font-size:.62rem;font-weight:700;}
+
+.mo{display:none;position:fixed;inset:0;background:#0006;z-index:100;align-items:center;justify-content:center;padding:20px;}
+.mo.open{display:flex;}
+.md{background:#fff;border-radius:18px;padding:28px;width:100%;max-width:640px;box-shadow:0 20px 60px #0003;animation:pi .25s ease;max-height:92vh;overflow-y:auto;}
+.md h3{font-size:1rem;font-weight:800;margin-bottom:16px;}
+@keyframes pi{from{transform:scale(.92);opacity:0}to{transform:scale(1);opacity:1}}
+
+.sw{position:relative;margin-bottom:16px;}
+.sw input{width:100%;padding:10px 14px 10px 38px;border:1.5px solid var(--borda);border-radius:10px;font-family:'Montserrat',sans-serif;font-size:.88rem;background:var(--cinza);color:var(--texto);}
+.sw input:focus{outline:none;border-color:var(--rosa);background:#fff;}
+.si{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--sub);pointer-events:none;}
+
+.em{text-align:center;padding:40px 20px;color:var(--sub);font-size:.9rem;}
+.em .ic{font-size:2.5rem;margin-bottom:10px;}
+.ct{font-size:.8rem;color:var(--sub);font-weight:600;}
+.ct strong{color:var(--texto);}
+.lt{text-align:center;padding:40px;color:var(--sub);}
+.sp2{width:32px;height:32px;border:3px solid var(--borda);border-top-color:var(--rosa);border-radius:50%;animation:spi .7s linear infinite;margin:0 auto 12px;}
+@keyframes spi{to{transform:rotate(360deg)}}
+.sb3{display:inline-block;background:#F0FDF4;color:#15803D;border:1px solid #86EFAC;border-radius:20px;padding:2px 8px;font-size:.65rem;font-weight:700;margin-left:6px;animation:fo 2s forwards;}
+@keyframes fo{0%{opacity:1}70%{opacity:1}100%{opacity:0}}
+
+/* JORNADA POR DIA */
+.dias-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:14px;}
+@media(max-width:600px){.dias-grid{grid-template-columns:repeat(4,1fr);}}
+.dia-card{border:1.5px solid var(--borda);border-radius:10px;padding:8px;background:var(--cinza);}
+.dia-card.tem-jornada{border-color:var(--rosa);background:#FFF0F6;}
+.dia-card label{font-size:.7rem;font-weight:800;color:var(--sub);display:block;margin-bottom:6px;text-transform:uppercase;}
+.dia-card.tem-jornada label{color:var(--rosa-d);}
+.periodo-mini{display:flex;flex-direction:column;gap:4px;margin-bottom:4px;}
+.periodo-mini input[type=time]{padding:4px 6px;border:1px solid var(--borda);border-radius:6px;font-family:'Montserrat',sans-serif;font-size:.72rem;width:100%;}
+.periodo-mini input:focus{outline:none;border-color:var(--rosa);}
+.add-per-btn{font-size:.65rem;padding:3px 6px;border:1px dashed var(--borda);border-radius:6px;background:none;cursor:pointer;color:var(--sub);width:100%;margin-top:2px;}
+.add-per-btn:hover{border-color:var(--rosa);color:var(--rosa-d);}
+.rem-per-btn{font-size:.6rem;padding:2px 5px;border:none;background:#FEE2E2;color:var(--vermelho);border-radius:4px;cursor:pointer;margin-left:4px;}
+
+/* AUSÊNCIAS */
+.aus-list{display:flex;flex-direction:column;gap:6px;margin-top:8px;}
+.aus-item{background:#F8FAFC;border:1.5px solid var(--borda);border-radius:10px;padding:8px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;}
+.aus-badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:.65rem;font-weight:700;}
+.ab-ferias{background:#EFF6FF;color:#1D4ED8;border:1px solid #93C5FD;}
+.ab-doenca{background:#FEF3C7;color:#92400E;border:1px solid #FCD34D;}
+.ab-licenca{background:#F3E8FF;color:#7C3AED;border:1px solid #C4B5FD;}
+.ab-atestado{background:#FFF7ED;color:#C2410C;border:1px solid #FDBA74;}
+.ab-outro{background:#F3F4F6;color:var(--sub);border:1px solid var(--borda);}
+
+.fer-item{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#F0FDF4;border:1.5px solid #86EFAC;border-radius:10px;margin-bottom:8px;font-size:.82rem;}
+.fer-local{background:#EFF6FF;border-color:#93C5FD;}
+
+.config-card{background:var(--cinza);border-radius:12px;padding:20px;border:1.5px solid var(--borda);margin-bottom:16px;}
+.config-card h3{font-size:.9rem;font-weight:800;margin-bottom:14px;}
+.cf{display:flex;flex-direction:column;gap:5px;margin-bottom:12px;}
+.cf label{font-size:.75rem;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.6px;}
+.cf input{padding:10px 14px;border:1.5px solid var(--borda);border-radius:10px;font-family:'Montserrat',sans-serif;font-size:.88rem;color:var(--texto);background:#fff;}
+.cf input:focus{outline:none;border-color:var(--rosa);}
+.aviso{background:#FEF3C7;border:1.5px solid #FCD34D;border-radius:10px;padding:12px 16px;font-size:.78rem;font-weight:600;color:#92400E;margin-bottom:16px;}
+.divider{border:none;border-top:1.5px solid var(--borda);margin:14px 0;}
+.legenda{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;font-size:.7rem;font-weight:600;}
+.leg-item{display:flex;align-items:center;gap:4px;}
+.leg-cor{width:10px;height:10px;border-radius:3px;}
+.filtro-func{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+.filtro-func button{padding:6px 14px;border-radius:20px;border:1.5px solid var(--borda);background:var(--cinza);cursor:pointer;font-family:'Montserrat',sans-serif;font-size:.78rem;font-weight:700;color:var(--sub);transition:.15s;}
+.filtro-func button.ativo{background:var(--rosa-d);color:#fff;border-color:var(--rosa-d);}
+</style>
+</head>
+<body>
+
+<div id="tela-senha">
+  <div class="senha-box">
+    <div class="logo-s">🍼</div>
+    <h2>BAMBAM BABY – Admin</h2>
+    <p>Digite a senha de administrador</p>
+    <input type="password" id="input-senha-admin" placeholder="••••••••" onkeydown="if(event.key==='Enter')verificarSenhaAdmin()">
+    <button onclick="verificarSenhaAdmin()">🔓 Entrar</button>
+    <div class="erro" id="erro-senha-admin">❌ Senha incorreta!</div>
+  </div>
+</div>
+
+<header>
+  <div class="hl">
+    <div class="logo">🍼</div>
+    <div><h1>BAMBAM BABY – Admin</h1><p>Painel de controle</p></div>
+  </div>
+  <div class="live"><div class="dot"></div>Ao vivo</div>
+</header>
+
+<div class="tabs">
+  <button class="tab active" onclick="trocarTab('dash',this)">📊 Dashboard</button>
+  <button class="tab" onclick="trocarTab('reg',this)">🕐 Registros</button>
+  <button class="tab" onclick="trocarTab('func',this)">👥 Funcionários</button>
+  <button class="tab" onclick="trocarTab('feriados',this)">📅 Feriados</button>
+  <button class="tab" onclick="trocarTab('config',this)">⚙️ Config</button>
+</div>
+
+<main>
+
+<!-- DASHBOARD -->
+<div class="pg active" id="pg-dash">
+  <div class="stats">
+    <div class="stat sr"><div class="n" id="st">0</div><div class="l">Total ativos</div></div>
+    <div class="stat sv"><div class="n" id="sp3">0</div><div class="l">Presentes hoje</div></div>
+    <div class="stat sa"><div class="n" id="sr2">0</div><div class="l">Registros hoje</div></div>
+    <div class="stat sc"><div class="n" id="sa2">0</div><div class="l">Ausentes hoje</div></div>
+  </div>
+  <div class="card">
+    <h2>✅ Presentes agora</h2>
+    <div id="pl"><div class="em"><div class="ic">👥</div>Nenhum presente.</div></div>
+  </div>
+  <div class="card">
+    <h2>🕐 Últimos registros</h2>
+    <div class="tw"><table><thead><tr><th>Funcionário</th><th>Tipo</th><th>Hora</th><th>Exc.</th></tr></thead><tbody id="ur"></tbody></table></div>
+  </div>
+</div>
+
+<!-- REGISTROS -->
+<div class="pg" id="pg-reg">
+  <div class="fp">
+    <h3>🗓️ Selecione o período</h3>
+    <div class="fg">
+      <div class="ff"><label>Data inicial</label><input type="date" id="di"></div>
+      <div class="ff"><label>Data final</label><input type="date" id="df"></div>
+    </div>
+    <div class="fa">
+      <button class="btn br" onclick="buscar()">🔍 Buscar</button>
+      <button class="btn bx" onclick="exportar()">📊 Exportar Excel</button>
+      <button class="btn bc bsm" onclick="setHoje()">Hoje</button>
+      <button class="btn bc bsm" onclick="setSemana()">Esta semana</button>
+      <button class="btn bc bsm" onclick="setMes()">Este mês</button>
+    </div>
+  </div>
+  <div id="resumo" style="display:none" class="rb"></div>
+  <div class="card">
+    <div class="legenda">
+      <div class="leg-item"><div class="leg-cor" style="background:#fff;border:1px solid #E5E7EB"></div>Normal</div>
+      <div class="leg-item"><div class="leg-cor" style="background:#FEF2F2"></div>Falta</div>
+      <div class="leg-item"><div class="leg-cor" style="background:#EFF6FF"></div>Ausência justificada</div>
+      <div class="leg-item"><div class="leg-cor" style="background:#F0FDF4"></div>Feriado/Folga</div>
+      <div class="leg-item"><div class="leg-cor" style="background:#FFFBEB"></div>Com exceção</div>
+    </div>
+    <h2>📋 Registros — todos os funcionários</h2>
+    <div id="rc"><div class="em"><div class="ic">🗓️</div>Selecione um período acima.</div></div>
+  </div>
+</div>
+
+<!-- FUNCIONÁRIOS -->
+<div class="pg" id="pg-func">
+  <div class="card">
+    <h2>➕ Adicionar funcionário</h2>
+    <div class="fg2">
+      <div class="fi" style="grid-column:1/-1"><label>Nome completo</label><input type="text" id="nn" placeholder="Ex: MARIA SILVA" oninput="this.value=this.value.toUpperCase()"></div>
+      <div class="fi"><label>Cargo</label><input type="text" id="nc" placeholder="Ex: Colaboradora"></div>
+      <div class="fi"><label>ID (opcional)</label><input type="text" id="ni" placeholder="Gerado automaticamente"></div>
+      <div class="fi"><label>Data de admissão</label><input type="date" id="nd"></div>
+      <div class="fi"><label>Férias após (meses)</label><input type="number" id="nf" value="12" min="1" max="24"></div>
+    </div>
+    <br>
+    <button class="btn br" onclick="addFunc()">➕ Adicionar</button>
+  </div>
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:10px">
+      <h2 style="margin:0">👥 Funcionários</h2>
+      <span class="ct">Total: <strong id="tc">0</strong></span>
+    </div>
+    <div class="filtro-func">
+      <button class="ativo" onclick="setFiltroFunc('ativos',this)">✅ Ativos</button>
+      <button onclick="setFiltroFunc('desligados',this)">❌ Desligados</button>
+      <button onclick="setFiltroFunc('todos',this)">👥 Todos</button>
+    </div>
+    <div class="sw"><span class="si">🔍</span><input type="text" id="bf" placeholder="Buscar…" oninput="renderF()"></div>
+    <div class="el" id="fl"><div class="em"><div class="ic">👤</div>Carregando…</div></div>
+  </div>
+</div>
+
+<!-- FERIADOS -->
+<div class="pg" id="pg-feriados">
+  <div class="card">
+    <h2>➕ Adicionar feriado ou folga</h2>
+    <div class="fg2">
+      <div class="fi"><label>Data</label><input type="date" id="fer-data"></div>
+      <div class="fi"><label>Tipo</label>
+        <select id="fer-tipo">
+          <option value="Feriado local">📍 Feriado local/municipal</option>
+          <option value="Feriado estadual">🗺️ Feriado estadual</option>
+          <option value="Folga coletiva">🏖️ Folga coletiva</option>
+          <option value="Ponto facultativo">📋 Ponto facultativo</option>
+        </select>
+      </div>
+      <div class="fi" style="grid-column:1/-1"><label>Descrição</label><input type="text" id="fer-desc" placeholder="Ex: Aniversário da cidade…"></div>
+    </div>
+    <br>
+    <button class="btn br" onclick="addFeriado()">➕ Adicionar</button>
+  </div>
+  <div class="card"><h2>🇧🇷 Feriados nacionais</h2><div id="lista-nacionais"></div></div>
+  <div class="card"><h2>📍 Feriados locais e folgas</h2><div id="lista-locais"><div class="em"><div class="ic">📅</div>Nenhum cadastrado.</div></div></div>
+</div>
+
+<!-- CONFIG -->
+<div class="pg" id="pg-config">
+  <div class="aviso">⚠️ Ao alterar a senha todos os dispositivos precisarão digitar a nova senha.</div>
+  <div class="config-card">
+    <h3>🔑 Senha do Tablet</h3>
+    <div class="cf"><label>Senha atual</label><input type="text" id="senha-index-atual" disabled></div>
+    <div class="cf"><label>Nova senha</label><input type="password" id="nova-senha-index"></div>
+    <div class="cf"><label>Confirmar</label><input type="password" id="conf-senha-index"></div>
+    <button class="btn br" onclick="alterarSenha('index')">💾 Salvar</button>
+  </div>
+  <div class="config-card">
+    <h3>🔐 Senha do Admin</h3>
+    <div class="cf"><label>Senha atual</label><input type="text" id="senha-admin-atual" disabled></div>
+    <div class="cf"><label>Nova senha</label><input type="password" id="nova-senha-admin"></div>
+    <div class="cf"><label>Confirmar</label><input type="password" id="conf-senha-admin"></div>
+    <button class="btn br" onclick="alterarSenha('admin')">💾 Salvar</button>
+  </div>
+  <div class="config-card">
+    <h3>🔗 Links</h3>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px;">
+      <div style="background:#fff;border-radius:8px;padding:10px 14px;border:1.5px solid var(--borda);font-size:.82rem;">📱 Tablet: banguelim.github.io/bambam-ponto/</div>
+      <div style="background:#fff;border-radius:8px;padding:10px 14px;border:1.5px solid var(--borda);font-size:.82rem;">💻 Admin: banguelim.github.io/bambam-ponto/admin.html</div>
+      <div style="background:#fff;border-radius:8px;padding:10px 14px;border:1.5px solid var(--borda);font-size:.82rem;">🪪 QR Codes: banguelim.github.io/bambam-ponto/funcionarios.html</div>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<!-- MODAL EDIÇÃO DE REGISTROS -->
+<div class="mo" id="mo-edicao">
+  <div class="md" style="max-width:500px">
+    <h3>✏️ Corrigir registros do dia</h3>
+    <div id="ed-info" style="background:var(--cinza);border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:.82rem;font-weight:600"></div>
+
+    <!-- LISTA DE REGISTROS -->
+    <div style="font-size:.75rem;font-weight:800;color:var(--sub);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">Registros do dia — clique para editar</div>
+    <div id="ed-lista" style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px;max-height:260px;overflow-y:auto"></div>
+
+    <!-- ADICIONAR REGISTRO -->
+    <div style="background:#F0FDF4;border:1.5px solid #86EFAC;border-radius:12px;padding:14px;margin-bottom:14px">
+      <div style="font-size:.78rem;font-weight:800;color:var(--verde);margin-bottom:10px">➕ Adicionar registro manualmente</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;align-items:end">
+        <div class="fi">
+          <label>Coluna</label>
+          <select id="add-coluna" style="padding:8px 10px;border:1.5px solid var(--borda);border-radius:8px;font-family:'Montserrat',sans-serif;font-size:.78rem;background:#fff">
+            <option value="entrada">✅ Entrada</option>
+            <option value="salmoco">🕐 S. Almoço</option>
+            <option value="valmoco">🔄 V. Almoço</option>
+            <option value="saida">🚪 Saída</option>
+          </select>
+        </div>
+        <div class="fi">
+          <label>Hora</label>
+          <input type="time" id="add-hora" style="padding:8px 10px;border:1.5px solid var(--borda);border-radius:8px;font-family:'Montserrat',sans-serif;font-size:.82rem;width:100%">
+        </div>
+        <button class="btn bv bsm" onclick="adicionarRegCorrigido()" style="height:36px;margin-top:2px">➕ Adicionar</button>
+      </div>
+    </div>
+
+    <div style="background:#FEF3C7;border:1.5px solid #FCD34D;border-radius:8px;padding:8px 12px;font-size:.72rem;color:#92400E;font-weight:600;margin-bottom:14px">
+      ⚠️ Correções são registradas com marcação "Admin"
+    </div>
+
+    <div style="text-align:right">
+      <button class="btn bc" onclick="fecharEdicao()">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL FUNCIONÁRIO -->
+<div class="mo" id="mo">
+  <div class="md">
+    <h3>✏️ Editar funcionário</h3>
+    <div class="fg2">
+      <div class="fi" style="grid-column:1/-1"><label>Nome</label><input type="text" id="en" oninput="this.value=this.value.toUpperCase()"></div>
+      <div class="fi"><label>Cargo</label><input type="text" id="ec"></div>
+      <div class="fi"><label>ID</label><input type="text" id="ei2" disabled style="opacity:.5"></div>
+      <div class="fi"><label>Admissão</label><input type="date" id="ed"></div>
+      <div class="fi"><label>Férias após (meses)</label><input type="number" id="ef" value="12" min="1"></div>
+      <div class="fi"><label>Data desligamento (se saiu)</label><input type="date" id="edesl" title="Deixe em branco se ainda ativo"></div>
+    </div>
+
+    <hr class="divider">
+    <h3 style="font-size:.9rem;margin-bottom:8px;">⏰ Jornada por dia da semana</h3>
+    <p style="font-size:.75rem;color:var(--sub);margin-bottom:12px;">Deixe em branco os dias que não trabalha. Adicione os períodos de cada dia.</p>
+    <div class="dias-grid" id="dias-grid"></div>
+
+    <hr class="divider">
+    <h3 style="font-size:.9rem;margin-bottom:12px;">📋 Ausências e afastamentos</h3>
+    <div class="fg2">
+      <div class="fi" style="grid-column:1/-1">
+        <label>Motivo</label>
+        <select id="aus-tipo">
+          <option value="Férias">🏖️ Férias</option>
+          <option value="Afastamento médico">🏥 Afastamento médico</option>
+          <option value="Atestado médico">📋 Atestado médico</option>
+          <option value="Licença maternidade">👶 Licença maternidade</option>
+          <option value="Licença paternidade">👨‍👶 Licença paternidade</option>
+          <option value="Licença luto">🖤 Licença luto</option>
+          <option value="Outro">📌 Outro</option>
+        </select>
+      </div>
+      <div class="fi"><label>Data início</label><input type="date" id="aus-inicio"></div>
+      <div class="fi"><label>Data fim</label><input type="date" id="aus-fim"></div>
+      <div class="fi" style="grid-column:1/-1"><label>Observação</label><input type="text" id="aus-obs" placeholder="Ex: CID B34.2…"></div>
+    </div>
+    <button class="btn bv bsm" style="margin-top:8px;margin-bottom:10px" onclick="addAusencia()">➕ Adicionar ausência</button>
+    <div id="aus-lista"></div>
+
+    <hr class="divider">
+    <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap">
+      <button class="btn bc" onclick="fecharMo()">Cancelar</button>
+      <button class="btn br" onclick="salvar()">💾 Salvar tudo</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, onValue, set, remove, get, push } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const fc={apiKey:"AIzaSyDQ6EUH_HBLYd76HMCdlgupNcwzTHvgido",authDomain:"bambam-ponto.firebaseapp.com",databaseURL:"https://bambam-ponto-default-rtdb.firebaseio.com",projectId:"bambam-ponto",storageBucket:"bambam-ponto.firebasestorage.app",messagingSenderId:"30916647304",appId:"1:30916647304:web:70323b427dbdd0e51d423d"};
+const app=initializeApp(fc);
+const db=getDatabase(app);
+
+const DIAS=['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+const DIAS_CURTO=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+const DIAS_KEY=['dom','seg','ter','qua','qui','sex','sab'];
+const FERIADOS_NAC={'01-01':'Confraternização Universal','04-21':'Tiradentes','05-01':'Dia do Trabalho','09-07':'Independência','10-12':'N. S. Aparecida','11-02':'Finados','11-15':'Proclamação da República','11-20':'Consciência Negra','12-25':'Natal'};
+
+function feriadosMoveis(ano){
+  const a=ano%19,b=Math.floor(ano/100),c=ano%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451);
+  const mes=Math.floor((h+l-7*m+114)/31),dia=((h+l-7*m+114)%31)+1;
+  const pascoa=new Date(ano,mes-1,dia);
+  const fmt=(d)=>`${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const add=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x;};
+  return{[fmt(add(pascoa,-48))]:'Carnaval (seg)',[fmt(add(pascoa,-47))]:'Carnaval (ter)',[fmt(add(pascoa,-2))]:'Sexta-feira Santa',[fmt(pascoa)]:'Páscoa',[fmt(add(pascoa,60))]:'Corpus Christi'};
+}
+
+function isFeriadoNac(dataStr){
+  const[ano,mes,dia]=dataStr.split('-');
+  return {...FERIADOS_NAC,...feriadosMoveis(parseInt(ano))}[`${mes}-${dia}`]||null;
+}
+
+let funcs=[],regHoje={},dadosCons=[],editId=null,ausenciasEdit={},feriadosLocais={};
+let jornadaEdit={}; // {dom:[],seg:[{entrada,saida}],...}
+let filtroFunc='ativos';
+
+const dh=()=>new Date().toISOString().split('T')[0];
+const ini=(n)=>{const p=n.trim().split(' ');return(p[0][0]+(p[1]?.[0]||'')).toUpperCase();};
+const fd=(d)=>d?d.split('-').reverse().join('/'):'';
+const toMin=(h)=>{const[hh,mm]=h.split(':').map(Number);return hh*60+mm;};
+
+// ── SENHA (com hash SHA-256, sem senha em plain text) ──
+async function sha256(txt){
+  const buf=new TextEncoder().encode(txt);
+  const hash=await crypto.subtle.digest('SHA-256',buf);
+  return Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+async function checarSenhaAdmin(){
+  const localHash=localStorage.getItem('bambam_hash_admin');
+  const localExp=parseInt(localStorage.getItem('bambam_exp_admin')||'0');
+  if(!localHash||localExp<Date.now()){
+    localStorage.removeItem('bambam_hash_admin');
+    localStorage.removeItem('bambam_exp_admin');
+    return;
+  }
+  const snap=await get(ref(db,'config/senha_admin_hash'));
+  const hashRemoto=snap.val();
+  if(hashRemoto && localHash===hashRemoto){
+    document.getElementById('tela-senha').style.display='none';
+    iniciarAdmin();
+  } else {
+    localStorage.removeItem('bambam_hash_admin');
+    localStorage.removeItem('bambam_exp_admin');
+  }
+}
+
+window.verificarSenhaAdmin=async function(){
+  const digitada=document.getElementById('input-senha-admin').value.trim();
+  if(!digitada) return;
+  const hashDigitada=await sha256(digitada);
+
+  const snapHash=await get(ref(db,'config/senha_admin_hash'));
+  const hashRemoto=snapHash.val();
+
+  let ok=false;
+  if(hashRemoto){
+    ok=(hashDigitada===hashRemoto);
+  } else {
+    // Migração automática de plain para hash
+    const snapPlain=await get(ref(db,'config/senha_admin'));
+    const plain=snapPlain.val();
+    if(plain && digitada===plain){
+      ok=true;
+      await set(ref(db,'config/senha_admin_hash'),hashDigitada);
+      try{await remove(ref(db,'config/senha_admin'));}catch(e){}
+    }
+  }
+
+  if(ok){
+    localStorage.setItem('bambam_hash_admin',hashDigitada);
+    localStorage.setItem('bambam_exp_admin',String(Date.now()+30*24*60*60*1000));
+    document.getElementById('tela-senha').style.display='none';
+    iniciarAdmin();
+  } else {
+    document.getElementById('erro-senha-admin').style.display='block';
+    document.getElementById('input-senha-admin').value='';
+    setTimeout(()=>{document.getElementById('erro-senha-admin').style.display='none';},3000);
+  }
+};
+
+function iniciarAdmin(){
+  onValue(ref(db,'funcionarios'),snap=>{
+    funcs=snap.val()?Object.values(snap.val()):[];
+    const ativos=funcs.filter(f=>!f.desligamento||f.desligamento>=dh());
+    document.getElementById('st').textContent=ativos.length;
+    renderF(); dash();
+  });
+  onValue(ref(db,'registros/'+dh()),snap=>{
+    regHoje={}; let lista=[];
+    const d=snap.val();
+    if(d){lista=Object.values(d);lista.forEach(r=>{regHoje[r.empId]=r.tipo;});}
+    document.getElementById('sr2').textContent=lista.length;
+    dash(); ultimos(lista);
+  });
+  onValue(ref(db,'feriados_locais'),snap=>{feriadosLocais=snap.val()||{};renderFeriados();});
+  // Nunca exibir a senha real — mostrar mascarado se estiver configurada
+  get(ref(db,'config/senha_index_hash')).then(s=>{
+    const el=document.getElementById('senha-index-atual');
+    if(s.val()) el.value='••••••••';
+    else get(ref(db,'config/senha_index')).then(p=>{el.value=p.val()?'•••••••• (formato antigo — troque)':'⚠️ não configurada';});
+  });
+  get(ref(db,'config/senha_admin_hash')).then(s=>{
+    const el=document.getElementById('senha-admin-atual');
+    if(s.val()) el.value='••••••••';
+    else get(ref(db,'config/senha_admin')).then(p=>{el.value=p.val()?'•••••••• (formato antigo — troque)':'⚠️ não configurada';});
+  });
+  renderFeriadosNacionais();
+}
+
+window.alterarSenha=async function(tipo){
+  const nova=document.getElementById(`nova-senha-${tipo}`).value.trim();
+  const conf=document.getElementById(`conf-senha-${tipo}`).value.trim();
+  if(!nova||nova!==conf){alert('⚠️ Senhas não conferem.');return;}
+  if(nova.length<8){alert('⚠️ Mínimo 8 caracteres. Use letras, números e símbolos.');return;}
+  // Bloqueia senhas óbvias
+  const fracas=['12345678','102030','bam102030','password','senha123','abcdefgh'];
+  if(fracas.includes(nova.toLowerCase())){alert('⚠️ Senha muito fraca. Escolha uma senha forte.');return;}
+
+  const hashNova=await sha256(nova);
+  await set(ref(db,`config/senha_${tipo}_hash`),hashNova);
+  // Remove versão antiga em plain text, se existir
+  try{await remove(ref(db,`config/senha_${tipo}`));}catch(e){}
+  // Invalida sessão local (força relogin no próximo acesso)
+  localStorage.removeItem(`bambam_hash_${tipo}`);
+  localStorage.removeItem(`bambam_exp_${tipo}`);
+  document.getElementById(`senha-${tipo}-atual`).value='••••••••';
+  document.getElementById(`nova-senha-${tipo}`).value='';
+  document.getElementById(`conf-senha-${tipo}`).value='';
+  toast(`✅ Senha alterada! Todos os dispositivos precisarão fazer login novamente.`);
+};
+
+window.trocarTab=function(t,b){
+  document.querySelectorAll('.pg').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  document.getElementById('pg-'+t).classList.add('active');
+  b.classList.add('active');
+};
+
+function dash(){
+  const hoje=dh();
+  const ativos=funcs.filter(f=>!f.desligamento||f.desligamento>=hoje);
+  const pr=ativos.filter(f=>regHoje[f.id]==='entrada');
+  document.getElementById('sp3').textContent=pr.length;
+  document.getElementById('sa2').textContent=ativos.length-pr.length;
+  const pl=document.getElementById('pl');
+  if(!pr.length){pl.innerHTML='<div class="em"><div class="ic">👥</div>Nenhum presente.</div>';return;}
+  pl.innerHTML='<div class="el">'+pr.map(f=>`<div class="er"><div class="av">${ini(f.nome)}</div><div class="ei"><div class="nm">${f.nome}</div><div class="mt"><span>🪪 ${f.id}</span><span class="cb">${f.cargo}</span><span class="spp">✅ Presente</span></div></div></div>`).join('')+'</div>';
+}
+
+function ultimos(lista){
+  const tb=document.getElementById('ur');
+  if(!lista.length){tb.innerHTML='<tr><td colspan="4" style="text-align:center;color:var(--sub);padding:20px">Sem registros.</td></tr>';return;}
+  tb.innerHTML=[...lista].reverse().slice(0,10).map(r=>`<tr><td><strong>${r.nome}</strong></td><td><span class="badge ${r.tipo==='entrada'?'be':'bsa'}">${r.tipo==='entrada'?'✅ Entrada':'🚪 Saída'}</span></td><td>${r.hora}</td><td>${r.excecao?'<span class="badge bex">⚠️</span>':''}</td></tr>`).join('');
+}
+
+// ── FERIADOS ──
+function renderFeriadosNacionais(){
+  const ano=new Date().getFullYear();
+  const todos={...FERIADOS_NAC,...feriadosMoveis(ano)};
+  document.getElementById('lista-nacionais').innerHTML=Object.entries(todos).sort((a,b)=>a[0].localeCompare(b[0])).map(([k,n])=>`<div class="fer-item"><span><strong>${n}</strong></span><span style="color:var(--sub);font-size:.75rem">${k} 🇧🇷</span></div>`).join('');
+}
+function renderFeriados(){
+  const lista=document.getElementById('lista-locais');
+  const items=Object.entries(feriadosLocais);
+  if(!items.length){lista.innerHTML='<div class="em"><div class="ic">📅</div>Nenhum cadastrado.</div>';return;}
+  lista.innerHTML=items.sort((a,b)=>a[1].data.localeCompare(b[1].data)).map(([key,f])=>`<div class="fer-item fer-local" style="margin-bottom:8px"><div><strong>${f.desc}</strong> — <span style="color:var(--sub);font-size:.75rem">${fd(f.data)} · ${f.tipo}</span></div><button class="btn bp bsm" onclick="remFeriado('${key}')">🗑️</button></div>`).join('');
+}
+window.addFeriado=async function(){
+  const data=document.getElementById('fer-data').value,tipo=document.getElementById('fer-tipo').value,desc=document.getElementById('fer-desc').value.trim();
+  if(!data||!desc){alert('⚠️ Preencha data e descrição.');return;}
+  await set(ref(db,'feriados_locais/fer_'+data.replace(/-/g,'')),{data,tipo,desc});
+  document.getElementById('fer-data').value='';document.getElementById('fer-desc').value='';
+  toast(`✅ ${desc} adicionado!`);
+};
+window.remFeriado=async function(key){if(!confirm('⚠️ Remover?'))return;await remove(ref(db,'feriados_locais/'+key));toast('🗑️ Removido.');};
+
+function isFeriadoLocal(dataStr){return Object.values(feriadosLocais).find(f=>f.data===dataStr)||null;}
+function statusDia(dataStr){
+  const fn=isFeriadoNac(dataStr);if(fn)return{tipo:'feriado',desc:fn};
+  const fl=isFeriadoLocal(dataStr);if(fl)return{tipo:'feriado',desc:fl.desc};
+  return null;
+}
+function getJornadaDia(f,dataStr){
+  const diaSemana=new Date(dataStr+'T12:00:00').getDay();
+  const diaKey=DIAS_KEY[diaSemana];
+  if(!f.jornada||!f.jornada[diaKey]||!f.jornada[diaKey].length) return null;
+  return f.jornada[diaKey];
+}
+
+// ── CALCULAR HORAS ──
+function calcHoras(entrada,sAlmoco,vAlmoco,saida){
+  if(!entrada||!saida)return '';
+  try{
+    let total=toMin(saida)-toMin(entrada);
+    if(total<=0)return '';
+    if(sAlmoco&&vAlmoco){const iv=toMin(vAlmoco)-toMin(sAlmoco);if(iv>0)total-=iv;}
+    if(total<=0)return '';
+    return `${String(Math.floor(total/60)).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`;
+  }catch{return '';}
+}
+
+window.setHoje=()=>{const h=dh();document.getElementById('di').value=h;document.getElementById('df').value=h;};
+window.setSemana=()=>{const hj=new Date(),d=hj.getDay(),s=new Date(hj);s.setDate(hj.getDate()-(d===0?6:d-1));document.getElementById('di').value=s.toISOString().split('T')[0];document.getElementById('df').value=dh();};
+window.setMes=()=>{const hj=new Date(),i=new Date(hj.getFullYear(),hj.getMonth(),1);document.getElementById('di').value=i.toISOString().split('T')[0];document.getElementById('df').value=dh();};
+
+// ── BUSCAR ──
+async function buscarAusencias(){
+  const snap=await get(ref(db,'ausencias'));
+  const val=snap.val()||{};
+  const ausMap={};
+  Object.entries(val).forEach(([empId,aus])=>{
+    if(!aus)return;
+    Object.values(aus).forEach(a=>{
+      if(!a.inicio||!a.fim)return;
+      const c=new Date(a.inicio+'T12:00:00'),e=new Date(a.fim+'T12:00:00');
+      while(c<=e){ausMap[empId+'|'+c.toISOString().split('T')[0]]=a.tipo+(a.obs?` — ${a.obs}`:'');c.setDate(c.getDate()+1);}
+    });
+  });
+  return ausMap;
+}
+async function buscarOcorrencias(datas){
+  const ocMap={};
+  const snaps=await Promise.all(datas.map(d=>get(ref(db,'ocorrencias/'+d))));
+  snaps.forEach((s,i)=>{const v=s.val();if(v)Object.entries(v).forEach(([id,oc])=>{ocMap[id+'|'+datas[i]]=oc;});});
+  return ocMap;
+}
+async function buscarRegistros(datas){
+  const snaps=await Promise.all(datas.map(d=>get(ref(db,'registros/'+d))));
+  const regMap={};
+  snaps.forEach(s=>{
+    const v=s.val();if(!v)return;
+    Object.values(v).forEach(r=>{
+      const key=r.empId+'|'+r.data;
+      if(!regMap[key])regMap[key]={entradas:[],saidas:[]};
+      if(r.tipo==='entrada')regMap[key].entradas.push({hora:r.hora,exc:!!r.excecao});
+      else regMap[key].saidas.push({hora:r.hora,exc:!!r.excecao});
+    });
+  });
+  return regMap;
+}
+
+window.buscar=async function(){
+  const di=document.getElementById('di').value,df=document.getElementById('df').value;
+  if(!di||!df){alert('⚠️ Selecione as datas.');return;}
+  if(di>df){alert('⚠️ Data inicial maior que final.');return;}
+  document.getElementById('rc').innerHTML='<div class="lt"><div class="sp2"></div>Buscando…</div>';
+
+  const datas=[];
+  const c=new Date(di+'T12:00:00'),e=new Date(df+'T12:00:00');
+  while(c<=e){datas.push(c.toISOString().split('T')[0]);c.setDate(c.getDate()+1);}
+
+  const[regMap,ausMap,ocMap]=await Promise.all([buscarRegistros(datas),buscarAusencias(),buscarOcorrencias(datas)]);
+  dadosCons=[];
+
+  // Funcionários ativos no período (considera data de desligamento)
+  const funcsAtivos=funcs.filter(f=>!f.desligamento||f.desligamento>=di);
+
+  datas.forEach(data=>{
+    const statusD=statusDia(data);
+    const diaSemana=new Date(data+'T12:00:00').getDay();
+    const diaNome=DIAS[diaSemana];
+    const diaCurto=DIAS_CURTO[diaSemana];
+
+    funcsAtivos.forEach(f=>{
+      // Ignora se funcionário já foi desligado antes desta data
+      if(f.desligamento&&f.desligamento<data) return;
+
+      const key=f.id+'|'+data;
+      const regs=regMap[key];
+      const ausencia=ausMap[key]||'';
+      const ocorrencia=ocMap[key]||'';
+      const jornada=getJornadaDia(f,data);
+
+      // Regra: sem jornada E sem registro E não é feriado com registro → pula
+      if(!jornada&&!regs&&!ausencia) return;
+      // Feriado/folga sem registro → pula (a menos que tenha ausência cadastrada)
+      if(statusD&&!regs&&!ausencia) return;
+
+      let entrada='',sAlmoco='',vAlmoco='',saida='';
+      let excEntradas=[],excSaidas=[];
+      let horas='',tipoLinha='normal',ocFinal='Normal',temExcecao=false;
+
+      if(regs){
+        // Junta todos os registros e ordena por hora cronologicamente
+        const todosRegs=[
+          ...regs.entradas.map(r=>({...r,tipo:'entrada'})),
+          ...regs.saidas.map(r=>({...r,tipo:'saida'}))
+        ].sort((a,b)=>a.hora.localeCompare(b.hora));
+
+        const temAlmoco=jornada&&jornada.length>=2;
+
+        // Distribui na sequência correta baseado na ordem cronológica
+        // Sequência esperada com almoço: entrada, sAlmoco, vAlmoco, saida
+        // Sequência sem almoço: entrada, saida
+        // Registros extras → exceções
+
+        let sequencia=[];
+        if(temAlmoco){
+          sequencia=['entrada','sAlmoco','vAlmoco','saida'];
+        } else {
+          sequencia=['entrada','saida'];
+        }
+
+        const valores={entrada:'',sAlmoco:'',vAlmoco:'',saida:''};
+        const extras=[];
+        let posSeq=0;
+
+        todosRegs.forEach(r=>{
+          if(r.exc){
+            // Registro marcado como exceção → vai para colunas extras
+            extras.push(r);
+            return;
+          }
+          // Tenta encaixar o registro na próxima coluna esperada
+          let usado=false;
+          while(posSeq<sequencia.length){
+            const colEsperada=sequencia[posSeq];
+            const tipoEsperado=(colEsperada==='entrada'||colEsperada==='vAlmoco')?'entrada':'saida';
+            if(r.tipo===tipoEsperado){
+              valores[colEsperada]=r.hora;
+              posSeq++;
+              usado=true;
+              break;
+            } else {
+              // Tipo não bate com esta coluna, pula para a próxima
+              posSeq++;
+            }
+          }
+          // Só vai para extras se NÃO foi usado em nenhuma coluna normal
+          if(!usado){
+            extras.push(r);
+          }
+        });
+
+        entrada=valores.entrada;
+        sAlmoco=valores.sAlmoco;
+        vAlmoco=valores.vAlmoco;
+        saida=valores.saida;
+
+        // Extras: entradas e saídas de exceção
+        excEntradas=extras.filter(r=>r.tipo==='entrada').map(r=>r.hora);
+        excSaidas=extras.filter(r=>r.tipo==='saida').map(r=>r.hora);
+        temExcecao=excEntradas.length>0||excSaidas.length>0;
+
+        horas=calcHoras(entrada,sAlmoco,vAlmoco,saida);
+        tipoLinha=temExcecao?'le':(statusD?'lfr':'ln');
+        ocFinal=ocorrencia||'Normal';
+      } else if(ausencia){
+        tipoLinha='la';
+        ocFinal=ocorrencia||ausencia.split(' — ')[0];
+      } else {
+        tipoLinha='lf';
+        ocFinal=ocorrencia||'Falta';
+      }
+
+      dadosCons.push({
+        empId:f.id,nome:f.nome,cargo:f.cargo||'',data,diaNome,diaCurto,
+        entrada,sAlmoco,vAlmoco,saida,horas,
+        excEntradas,excSaidas,temExcecao,
+        ocorrencia:ocFinal,ausencia,tipoLinha,
+        statusD:statusD?.desc||''
+      });
+    });
+  });
+
+  dadosCons.sort((a,b)=>a.data!==b.data?a.data.localeCompare(b.data):a.nome.localeCompare(b.nome));
+
+  // Calcula max colunas de exceção
+  const maxExcE=Math.max(0,...dadosCons.map(r=>r.excEntradas.length));
+  const maxExcS=Math.max(0,...dadosCons.map(r=>r.excSaidas.length));
+
+  const res=document.getElementById('resumo');
+  res.style.display='flex';
+  res.innerHTML=`<span>📅 <strong>${fd(di)} a ${fd(df)}</strong></span><span>Total: <strong>${dadosCons.length}</strong></span><span>✅ Presenças: <strong>${dadosCons.filter(r=>r.tipoLinha==='ln'&&r.entrada).length}</strong></span><span>❌ Faltas: <strong>${dadosCons.filter(r=>r.tipoLinha==='lf').length}</strong></span><span>⚠️ Exceções: <strong>${dadosCons.filter(r=>r.temExcecao).length}</strong></span>`;
+
+  if(!dadosCons.length){document.getElementById('rc').innerHTML='<div class="em"><div class="ic">📋</div>Nenhum registro.</div>';return;}
+
+  const opts=['Normal','Férias','Af. Doença','Falta','Atestado','Lic. Maternidade','Folga','Feriado','Exceção','Outro'];
+  const cm={Normal:'normal',Férias:'ferias','Af. Doença':'doenca',Falta:'falta',Atestado:'atestado','Lic. Maternidade':'licenca',Folga:'folga',Feriado:'feriado',Exceção:'excecao',Outro:'outro'};
+
+  // Cabeçalho dinâmico com colunas de exceção
+  let excHeaders='';
+  for(let i=0;i<maxExcE;i++) excHeaders+=`<th>Exc.Ent${i+1}</th>`;
+  for(let i=0;i<maxExcS;i++) excHeaders+=`<th>Exc.Saí${i+1}</th>`;
+
+  document.getElementById('rc').innerHTML=`<div class="tw"><table>
+    <thead><tr>
+      <th>ID</th><th class="sn">Funcionário</th><th>Dia</th><th>Data</th>
+      <th>Entrada</th><th>S.Almoço</th><th>V.Almoço</th><th>Saída</th>
+      ${excHeaders}<th>Horas</th>
+      <th class="so">Ocorrência ✏️</th>
+    </tr></thead>
+    <tbody>${dadosCons.map((r,idx)=>{
+      let excCols='';
+      for(let i=0;i<maxExcE;i++) excCols+=`<td class="${r.excEntradas[i]?'exc-cell hora':'vazio'}">${r.excEntradas[i]||'—'}</td>`;
+      for(let i=0;i<maxExcS;i++) excCols+=`<td class="${r.excSaidas[i]?'exc-cell hora':'vazio'}">${r.excSaidas[i]||'—'}</td>`;
+      return `<tr class="${r.tipoLinha}">
+        <td>${r.empId}</td>
+        <td class="sn"><strong>${r.nome}</strong>${r.ausencia?`<br><span style="font-size:.62rem;color:#1D4ED8">${r.ausencia}</span>`:r.statusD?`<br><span style="font-size:.62rem;color:var(--verde)">🎉 ${r.statusD}</span>`:''}${r.temExcecao?'<br><span style="font-size:.62rem;color:#92400E">⚠️ Com exceção</span>':''}</td>
+        <td style="font-weight:700;color:var(--sub)">${r.diaCurto}</td>
+        <td>${fd(r.data)}</td>
+        <td class="${r.entrada?'hora':'vazio'}">${r.entrada||'—'}</td>
+        <td class="${r.sAlmoco?'hora':'vazio'}">${r.sAlmoco||'—'}</td>
+        <td class="${r.vAlmoco?'hora':'vazio'}">${r.vAlmoco||'—'}</td>
+        <td class="${r.saida?'hora':'vazio'}">${r.saida||'—'}</td>
+        ${excCols}<td class="${r.horas?'horas':'vazio'}">${r.horas||'—'}</td>
+        <td class="so" style="display:flex;gap:6px;align-items:center">
+          <select class="os ${cm[r.ocorrencia]||'normal'}" onchange="salvarOc('${r.empId}','${r.data}',this.value,this,${idx})">${opts.map(o=>`<option ${o===r.ocorrencia?'selected':''}>${o}</option>`).join('')}</select>
+          <button onclick="abrirEdicao('${r.empId}','${r.data}','${r.nome}')" style="padding:4px 8px;border:1.5px solid #93C5FD;border-radius:7px;background:#EFF6FF;color:#1D4ED8;cursor:pointer;font-size:.72rem;font-weight:700;white-space:nowrap">✏️ Editar</button>
+        </td>
+      </tr>`;
+    }).join('')}</tbody></table></div>`;
+};
+
+window.salvarOc=async function(id,data,val,el,idx){
+  const cm={Normal:'normal',Férias:'ferias','Af. Doença':'doenca',Falta:'falta',Atestado:'atestado','Lic. Maternidade':'licenca',Folga:'folga',Feriado:'feriado',Exceção:'excecao',Outro:'outro'};
+  el.className='os '+(cm[val]||'normal');
+  if(dadosCons[idx])dadosCons[idx].ocorrencia=val;
+  await set(ref(db,'ocorrencias/'+data+'/'+id),val);
+  let b=el.parentElement.querySelector('.sb3');if(b)b.remove();
+  b=document.createElement('span');b.className='sb3';b.textContent='✓';
+  el.parentElement.appendChild(b);
+  setTimeout(()=>{if(b.parentElement)b.remove();},2000);
+};
+
+// ── EXPORTAR ──
+window.exportar=function(){
+  const di=document.getElementById('di').value,df=document.getElementById('df').value;
+  if(!di||!df){alert('⚠️ Selecione o período.');return;}
+  if(!dadosCons.length){alert('⚠️ Clique em Buscar primeiro.');return;}
+
+  const maxExcE=Math.max(0,...dadosCons.map(r=>r.excEntradas.length));
+  const maxExcS=Math.max(0,...dadosCons.map(r=>r.excSaidas.length));
+
+  const cab=['ID','Funcionário','Cargo','Dia','Data','Entrada','S. Almoço','V. Almoço','Saída'];
+  for(let i=0;i<maxExcE;i++) cab.push(`Exc.Entrada ${i+1}`);
+  for(let i=0;i<maxExcS;i++) cab.push(`Exc.Saída ${i+1}`);
+  cab.push('Horas Trabalhadas');
+  cab.push('Ocorrência');
+
+  const linhas=[cab];
+  dadosCons.forEach(r=>{
+    const row=[r.empId,r.nome,r.cargo,r.diaNome,fd(r.data),r.entrada||'',r.sAlmoco||'',r.vAlmoco||'',r.saida||''];
+    for(let i=0;i<maxExcE;i++) row.push(r.excEntradas[i]||'');
+    for(let i=0;i<maxExcS;i++) row.push(r.excSaidas[i]||'');
+    row.push(r.horas||'');
+    row.push(r.ocorrencia||'Normal');
+    linhas.push(row);
+  });
+  linhas.push(['','Total: '+dadosCons.length,'','','','','','','','Faltas: '+dadosCons.filter(r=>r.tipoLinha==='lf').length]);
+
+  const wb=XLSX.utils.book_new();
+  const ws=XLSX.utils.aoa_to_sheet(linhas);
+  const cols=[{wch:8},{wch:34},{wch:14},{wch:10},{wch:12},{wch:10},{wch:10},{wch:10},{wch:10},{wch:14}];
+  for(let i=0;i<maxExcE+maxExcS;i++) cols.push({wch:12});
+  cols.push({wch:14});
+  ws['!cols']=cols;
+  XLSX.utils.book_append_sheet(wb,ws,'Ponto BAMBAM BABY');
+  XLSX.writeFile(wb,`Ponto_BAMBAM_${fd(di).replace(/\//g,'-')}_a_${fd(df).replace(/\//g,'-')}.xlsx`);
+  toast('📊 Excel exportado!');
+};
+
+// ── FUNCIONÁRIOS ──
+window.setFiltroFunc=function(filtro,btn){
+  filtroFunc=filtro;
+  document.querySelectorAll('.filtro-func button').forEach(b=>b.classList.remove('ativo'));
+  btn.classList.add('ativo');
+  renderF();
+};
+
+window.renderF=function(){
+  const b=(document.getElementById('bf')?.value||'').toLowerCase();
+  const hoje=dh();
+  let fl=funcs.filter(f=>f.nome.toLowerCase().includes(b)||f.id.toLowerCase().includes(b));
+  if(filtroFunc==='ativos') fl=fl.filter(f=>!f.desligamento||f.desligamento>=hoje);
+  else if(filtroFunc==='desligados') fl=fl.filter(f=>f.desligamento&&f.desligamento<hoje);
+  document.getElementById('tc').textContent=fl.length;
+  const c=document.getElementById('fl');
+  if(!fl.length){c.innerHTML='<div class="em"><div class="ic">👤</div>Nenhum encontrado.</div>';return;}
+  c.innerHTML=fl.map(f=>{
+    const desligado=f.desligamento&&f.desligamento<hoje;
+    let infoFerias='';
+    if(!desligado&&f.admissao){const m=Math.floor((new Date()-new Date(f.admissao+'T12:00:00'))/(1000*60*60*24*30.5));if(m>=(f.mesesFerias||12))infoFerias='<span style="color:#1D4ED8;font-weight:700;font-size:.7rem">🏖️ Férias disponíveis</span>';}
+    // Jornada resumida
+    const jornadaStr=DIAS_KEY.filter(dk=>f.jornada&&f.jornada[dk]&&f.jornada[dk].length).map(dk=>{const per=f.jornada[dk];return DIAS_CURTO[DIAS_KEY.indexOf(dk)]+': '+per.map(p=>`${p.entrada}-${p.saida}`).join('/');}).join(' | ')||'Padrão';
+    return `<div class="er${desligado?' desligado':''}">
+      <div class="av">${ini(f.nome)}</div>
+      <div class="ei">
+        <div class="nm">${f.nome}${desligado?` <span class="dt">Desligado ${fd(f.desligamento)}</span>`:''}</div>
+        <div class="mt">
+          <span>🪪 ${f.id}</span>
+          <span class="cb">${f.cargo||'Colaborador'}</span>
+          <span class="jt" title="${jornadaStr}">⏰ ${jornadaStr.length>30?jornadaStr.substring(0,30)+'…':jornadaStr}</span>
+          ${f.admissao?`<span>📅 ${fd(f.admissao)}</span>`:''}
+          ${!desligado&&regHoje[f.id]==='entrada'?'<span class="spp">✅ Presente</span>':''}
+          ${infoFerias}
+        </div>
+      </div>
+      <div class="ea">
+        <button class="btn bv bsm" onclick="abrirMo('${f.id}')">✏️</button>
+        <button class="btn bp bsm" onclick="remF('${f.id}')">🗑️</button>
+      </div>
+    </div>`;
+  }).join('');
+};
+
+window.addFunc=async function(){
+  const n=document.getElementById('nn').value.trim().toUpperCase();
+  const c=document.getElementById('nc').value.trim()||'Colaborador';
+  const d=document.getElementById('nd').value;
+  const mf=parseInt(document.getElementById('nf').value)||12;
+  let id=document.getElementById('ni').value.trim().toUpperCase();
+  if(!n){alert('⚠️ Informe o nome.');return;}
+  if(!id){const ns=funcs.map(f=>parseInt(f.id.replace('EMP',''))).filter(x=>!isNaN(x));id='EMP'+String((ns.length?Math.max(...ns):0)+1).padStart(3,'0');}
+  else if(funcs.find(f=>f.id===id)){alert('⚠️ ID já existe.');return;}
+  // Jornada padrão
+  const jornada={seg:[{entrada:'07:00',saida:'11:00'},{entrada:'12:00',saida:'17:00'}],ter:[{entrada:'07:00',saida:'11:00'},{entrada:'12:00',saida:'17:00'}],qua:[{entrada:'07:00',saida:'11:00'},{entrada:'12:00',saida:'17:00'}],qui:[{entrada:'07:00',saida:'11:00'},{entrada:'12:00',saida:'17:00'}],sex:[{entrada:'07:00',saida:'11:00'},{entrada:'12:00',saida:'16:00'}],sab:[],dom:[]};
+  await set(ref(db,'funcionarios/'+id),{id,nome:n,cargo:c,admissao:d||'',mesesFerias:mf,jornada,desligamento:''});
+  document.getElementById('nn').value='';document.getElementById('nc').value='';
+  document.getElementById('ni').value='';document.getElementById('nd').value='';
+  toast(`✅ ${n.split(' ')[0]} adicionado(a)!`);
+};
+
+window.remF=async function(id){
+  const f=funcs.find(x=>x.id===id);
+  if(!f||!confirm(`⚠️ Remover "${f.nome}" permanentemente?`))return;
+  await remove(ref(db,'funcionarios/'+id));
+  await remove(ref(db,'ausencias/'+id));
+  toast(`🗑️ ${f.nome.split(' ')[0]} removido(a).`);
+};
+
+// ── MODAL JORNADA ──
+function renderDiasGrid(){
+  const grid=document.getElementById('dias-grid');
+  grid.innerHTML=DIAS_KEY.map((dk,idx)=>{
+    const periodos=jornadaEdit[dk]||[];
+    const temJornada=periodos.length>0;
+    const periodosHtml=periodos.map((p,pi)=>`
+      <div class="periodo-mini">
+        <div style="display:flex;align-items:center;gap:4px">
+          <input type="time" value="${p.entrada}" onchange="updatePer('${dk}',${pi},'entrada',this.value)" style="flex:1">
+          <span style="font-size:.65rem;color:var(--sub)">↓</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:4px">
+          <input type="time" value="${p.saida}" onchange="updatePer('${dk}',${pi},'saida',this.value)" style="flex:1">
+          <button class="rem-per-btn" onclick="remPer('${dk}',${pi})">✕</button>
+        </div>
+      </div>`).join('');
+    return `<div class="dia-card${temJornada?' tem-jornada':''}">
+      <label>${DIAS_CURTO[idx]}</label>
+      ${periodosHtml}
+      <button class="add-per-btn" onclick="addPer('${dk}')">+ turno</button>
+    </div>`;
+  }).join('');
+}
+
+window.addPer=function(dk){
+  if(!jornadaEdit[dk]) jornadaEdit[dk]=[];
+  jornadaEdit[dk].push({entrada:'07:00',saida:'12:00'});
+  renderDiasGrid();
+};
+window.remPer=function(dk,idx){jornadaEdit[dk].splice(idx,1);renderDiasGrid();};
+window.updatePer=function(dk,idx,campo,val){if(jornadaEdit[dk]&&jornadaEdit[dk][idx])jornadaEdit[dk][idx][campo]=val;};
+
+window.abrirMo=async function(id){
+  const f=funcs.find(x=>x.id===id);if(!f)return;
+  editId=id; ausenciasEdit={};
+  document.getElementById('en').value=f.nome;
+  document.getElementById('ec').value=f.cargo||'';
+  document.getElementById('ei2').value=f.id;
+  document.getElementById('ed').value=f.admissao||'';
+  document.getElementById('ef').value=f.mesesFerias||12;
+  document.getElementById('edesl').value=f.desligamento||'';
+
+  // Carrega jornada
+  jornadaEdit={};
+  DIAS_KEY.forEach(dk=>{jornadaEdit[dk]=f.jornada&&f.jornada[dk]?JSON.parse(JSON.stringify(f.jornada[dk])):[];});
+  renderDiasGrid();
+
+  // Carrega ausências
+  const snap=await get(ref(db,'ausencias/'+id));
+  ausenciasEdit=snap.val()||{};
+  renderAusencias();
+  document.getElementById('aus-inicio').value='';
+  document.getElementById('aus-fim').value='';
+  document.getElementById('aus-obs').value='';
+  document.getElementById('mo').classList.add('open');
+};
+
+function renderAusencias(){
+  const lista=document.getElementById('aus-lista');
+  const items=Object.entries(ausenciasEdit);
+  if(!items.length){lista.innerHTML='<div style="font-size:.78rem;color:var(--sub);padding:6px">Nenhuma ausência.</div>';return;}
+  lista.innerHTML='<div class="aus-list">'+items.map(([key,aus])=>`
+    <div class="aus-item">
+      <div><span class="aus-badge ab-${aus.tipo==='Férias'?'ferias':aus.tipo.includes('médico')||aus.tipo.includes('Af')?'doenca':aus.tipo.includes('Lic')?'licenca':aus.tipo.includes('testado')?'atestado':'outro'}">${aus.tipo}</span><strong>${fd(aus.inicio)}</strong> a <strong>${fd(aus.fim)}</strong>${aus.obs?` — <span style="color:var(--sub);font-size:.72rem">${aus.obs}</span>`:''}</div>
+      <button class="btn bp bsm" onclick="remAusencia('${key}')">🗑️</button>
+    </div>`).join('')+'</div>';
+}
+
+window.addAusencia=function(){
+  const tipo=document.getElementById('aus-tipo').value;
+  const inicio=document.getElementById('aus-inicio').value;
+  const fim=document.getElementById('aus-fim').value;
+  const obs=document.getElementById('aus-obs').value.trim();
+  if(!inicio||!fim){alert('⚠️ Informe data início e fim.');return;}
+  if(inicio>fim){alert('⚠️ Data início maior que fim.');return;}
+  ausenciasEdit['aus_'+Date.now()]={tipo,inicio,fim,obs};
+  renderAusencias();
+  document.getElementById('aus-inicio').value='';
+  document.getElementById('aus-fim').value='';
+  document.getElementById('aus-obs').value='';
+};
+
+window.remAusencia=function(key){delete ausenciasEdit[key];renderAusencias();};
+window.fecharMo=function(){document.getElementById('mo').classList.remove('open');editId=null;ausenciasEdit={};jornadaEdit={};};
+
+window.salvar=async function(){
+  if(!editId)return;
+  const n=document.getElementById('en').value.trim().toUpperCase();
+  const c=document.getElementById('ec').value.trim()||'Colaborador';
+  const d=document.getElementById('ed').value;
+  const mf=parseInt(document.getElementById('ef').value)||12;
+  const desl=document.getElementById('edesl').value;
+  if(!n){alert('⚠️ Nome vazio.');return;}
+  // Garante que inputs de jornada foram atualizados
+  document.querySelectorAll('#dias-grid input[type=time]').forEach(inp=>{
+    const dk=inp.closest('.dia-card')?.dataset?.dk;
+  });
+  await set(ref(db,'funcionarios/'+editId),{id:editId,nome:n,cargo:c,admissao:d||'',mesesFerias:mf,jornada:jornadaEdit,desligamento:desl||''});
+  await set(ref(db,'ausencias/'+editId),ausenciasEdit);
+  fecharMo();toast('💾 Dados salvos com sucesso!');
+};
+
+document.getElementById('mo').addEventListener('click',function(e){if(e.target===this)fecharMo();});
+
+
+
+// ── EDIÇÃO DE REGISTROS ──
+let edEmpId='',edData='',edNome='';
+
+window.abrirEdicao=async function(empId,data,nome){
+  edEmpId=empId; edData=data; edNome=decodeURIComponent(nome);
+  document.getElementById('ed-info').innerHTML=`<strong>${edNome}</strong> — ${data.split('-').reverse().join('/')}`;
+  document.getElementById('mo-edicao').classList.add('open');
+  await renderEdLista();
+};
+
+async function renderEdLista(){
+  const snap=await get(ref(db,'registros/'+edData));
+  const val=snap.val()||{};
+  const regs=Object.entries(val)
+    .filter(([k,r])=>r.empId===edEmpId)
+    .map(([k,r])=>({key:k,...r}))
+    .sort((a,b)=>a.hora.localeCompare(b.hora));
+
+  const lista=document.getElementById('ed-lista');
+  if(!regs.length){
+    lista.innerHTML='<div style="text-align:center;color:var(--sub);padding:16px;font-size:.82rem">Nenhum registro neste dia.</div>';
+    return;
+  }
+
+  const colunaLabel={entrada:'✅ Entrada',salmoco:'🕐 S.Almoço',valmoco:'🔄 V.Almoço',saida:'🚪 Saída'};
+  const tipoOposto={entrada:'saida',saida:'entrada'};
+  const tipoLabel={entrada:'✅ Entrada',saida:'🚪 Saída'};
+
+  lista.innerHTML=regs.map(r=>{
+    const cor=r.tipo==='entrada'?'#F0FDF4':'#FFF0F6';
+    const borda=r.tipo==='entrada'?'#86EFAC':'#FECDD3';
+    const admin=r.corrigido?'<span style="font-size:.62rem;background:#FEF3C7;color:#92400E;padding:1px 6px;border-radius:8px;margin-left:4px">Admin</span>':'';
+    const exc=r.excecao?'<span style="font-size:.62rem;background:#EFF6FF;color:#1D4ED8;padding:1px 6px;border-radius:8px;margin-left:4px">Exc</span>':'';
+    return `<div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:${cor};border:1.5px solid ${borda};border-radius:10px">
+      <div style="flex:1">
+        <span style="font-size:.82rem;font-weight:700">${tipoLabel[r.tipo]}</span>
+        <span style="font-family:monospace;font-size:.9rem;font-weight:900;margin-left:8px">${r.hora}</span>
+        ${admin}${exc}
+      </div>
+      <button onclick="trocarTipo('${r.key}','${r.tipo}')"
+        style="padding:4px 9px;border:1.5px solid #93C5FD;border-radius:7px;background:#EFF6FF;color:#1D4ED8;cursor:pointer;font-size:.7rem;font-weight:700;white-space:nowrap">
+        🔄 Trocar p/ ${tipoLabel[tipoOposto[r.tipo]]}
+      </button>
+      <button onclick="excluirReg('${r.key}')"
+        style="padding:4px 9px;border:1.5px solid #FCA5A5;border-radius:7px;background:#FEE2E2;color:#DC2626;cursor:pointer;font-size:.7rem;font-weight:700">
+        🗑️
+      </button>
+    </div>`;
+  }).join('');
+}
+
+window.trocarTipo=async function(key,tipoAtual){
+  const novoTipo=tipoAtual==='entrada'?'saida':'entrada';
+  const snap=await get(ref(db,'registros/'+edData+'/'+key));
+  const reg=snap.val();
+  if(!reg)return;
+  await set(ref(db,'registros/'+edData+'/'+key),{...reg,tipo:novoTipo,corrigido:true,corrigidoEm:new Date().toISOString()});
+  toast(`🔄 Trocado para ${novoTipo==='entrada'?'Entrada':'Saída'}!`);
+  await renderEdLista();
+  buscar();
+};
+
+window.excluirReg=async function(key){
+  if(!confirm('⚠️ Excluir este registro?'))return;
+  await remove(ref(db,'registros/'+edData+'/'+key));
+  toast('🗑️ Registro excluído.');
+  await renderEdLista();
+  buscar();
+};
+
+// Mapa de coluna para tipo
+const colunaParaTipo={entrada:'entrada',salmoco:'saida',valmoco:'entrada',saida:'saida'};
+
+window.adicionarRegCorrigido=async function(){
+  const coluna=document.getElementById('add-coluna').value;
+  const horaEl=document.getElementById('add-hora')||document.getElementById('add-hora-dup');
+  const hora=horaEl?horaEl.value:'';
+  if(!hora){alert('⚠️ Informe a hora.');return;}
+  const tipo=colunaParaTipo[coluna];
+  const f=funcs.find(x=>x.id===edEmpId);
+  const reg={
+    empId:edEmpId,
+    nome:edNome,
+    cargo:f?.cargo||'Colaborador',
+    tipo,
+    coluna, // guarda qual coluna foi definida
+    data:edData,
+    hora:hora+':00',
+    timestamp:edData+'T'+hora+':00',
+    corrigido:true,
+    corrigidoEm:new Date().toISOString()
+  };
+  await push(ref(db,'registros/'+edData),reg);
+  const _h=document.getElementById('add-hora')||document.getElementById('add-hora-dup');if(_h)_h.value='';
+  toast(`✅ Registro adicionado como ${hora}!`);
+  await renderEdLista();
+  buscar();
+};
+
+window.fecharEdicao=function(){
+  document.getElementById('mo-edicao').classList.remove('open');
+  edEmpId='';edData='';edNome='';
+};
+document.getElementById('mo-edicao').addEventListener('click',function(e){if(e.target===this)fecharEdicao();});
+
+function toast(msg){
+  let t=document.getElementById('toast');
+  if(!t){t=document.createElement('div');t.id='toast';Object.assign(t.style,{position:'fixed',bottom:'24px',left:'50%',transform:'translateX(-50%) translateY(80px)',background:'#1F2937',color:'#fff',padding:'12px 24px',borderRadius:'30px',fontFamily:'Montserrat,sans-serif',fontWeight:'700',fontSize:'.88rem',boxShadow:'0 8px 24px #0003',transition:'transform .3s',zIndex:'999',whiteSpace:'nowrap'});document.body.appendChild(t);}
+  t.textContent=msg;
+  setTimeout(()=>{t.style.transform='translateX(-50%) translateY(0)';},10);
+  setTimeout(()=>{t.style.transform='translateX(-50%) translateY(80px)';},3500);
+}
+
+setMes();
+checarSenhaAdmin();
+</script>
+
+<!-- MODAL EDIÇÃO DE REGISTROS -->
+<div class="mo" id="mo-edicao">
+  <div class="md" style="max-width:520px">
+    <h3>✏️ Editar registros do dia</h3>
+    <div id="edicao-info" style="background:var(--cinza);border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:.82rem;font-weight:600;color:var(--sub)"></div>
+
+    <div id="edicao-lista" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;max-height:280px;overflow-y:auto"></div>
+
+    <div style="background:#F0FDF4;border:1.5px solid #86EFAC;border-radius:10px;padding:14px;margin-bottom:16px">
+      <div style="font-size:.78rem;font-weight:800;color:var(--verde);margin-bottom:10px">➕ Adicionar registro</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;align-items:end">
+        <div class="fi"><label>Tipo</label>
+          <select id="add-tipo" style="padding:8px 10px;border:1.5px solid var(--borda);border-radius:8px;font-family:'Montserrat',sans-serif;font-size:.82rem;background:#fff">
+            <option value="entrada">✅ Entrada</option>
+            <option value="saida">🚪 Saída</option>
+          </select>
+        </div>
+        <div class="fi"><label>Hora</label>
+          <input type="time" id="add-hora-dup" style="padding:8px 10px;border:1.5px solid var(--borda);border-radius:8px;font-family:'Montserrat',sans-serif;font-size:.82rem">
+        </div>
+        <button class="btn bv bsm" onclick="adicionarRegistro()" style="height:38px">➕ Adicionar</button>
+      </div>
+    </div>
+
+    <div style="background:#FEF3C7;border:1.5px solid #FCD34D;border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:.72rem;color:#92400E;font-weight:600">
+      ⚠️ Correções ficam registradas como "Corrigido pelo admin"
+    </div>
+
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn bc" onclick="fecharEdicao()">Fechar</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

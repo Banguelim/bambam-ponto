@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BAMBAM BABY – Funcionários e QR Codes</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&display=swap');
+:root{--rosa:#F472B6;--rosa-d:#DB2777;--verde:#16A34A;--cinza:#F8F8FA;--borda:#E5E7EB;--texto:#1F2937;--sub:#6B7280;--vermelho:#DC2626;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Montserrat',sans-serif;background:#F0F2F5;color:var(--texto);min-height:100vh;}
+header{background:#fff;border-bottom:2px solid var(--borda);padding:16px 28px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+.logo{width:44px;height:44px;background:linear-gradient(135deg,var(--rosa),var(--rosa-d));border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;}
+.hl{display:flex;align-items:center;gap:14px;}
+header h1{font-size:1.1rem;font-weight:900;}
+header p{font-size:.75rem;color:var(--sub);margin-top:2px;}
+main{max-width:900px;margin:0 auto;padding:28px 18px 80px;display:flex;flex-direction:column;gap:20px;}
+.card{background:#fff;border-radius:16px;padding:24px;border:1.5px solid var(--borda);box-shadow:0 2px 12px #0001;}
+.card h2{font-size:1rem;font-weight:800;margin-bottom:18px;display:flex;align-items:center;gap:8px;}
+.btn{padding:11px 22px;border:none;border-radius:10px;font-family:'Montserrat',sans-serif;font-size:.88rem;font-weight:700;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;gap:7px;}
+.btn:hover{opacity:.88;transform:translateY(-1px);}
+.btn-rosa{background:linear-gradient(135deg,var(--rosa),var(--rosa-d));color:#fff;box-shadow:0 4px 14px #F472B644;}
+.btn-verde{background:#DCFCE7;color:var(--verde);border:1.5px solid #86EFAC;}
+.btn-cinza{background:#F3F4F6;color:var(--sub);}
+.btn-sm{padding:7px 14px;font-size:.78rem;border-radius:8px;}
+
+/* GRID DE CRACHÁS */
+.crachas-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;}
+
+/* CRACHÁ */
+.cracha{
+  background:#fff;border-radius:16px;padding:18px;
+  border:2px solid var(--borda);text-align:center;
+  box-shadow:0 2px 12px #0001;
+}
+.cracha .av{
+  width:56px;height:56px;border-radius:50%;
+  background:linear-gradient(135deg,#FFDCE8,#FFF0F6);
+  border:2px solid var(--borda);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.1rem;font-weight:900;color:var(--rosa-d);
+  margin:0 auto 10px;
+}
+.cracha .empresa{font-size:.6rem;font-weight:900;color:var(--rosa-d);letter-spacing:1px;margin-bottom:4px;}
+.cracha .nome{font-size:.72rem;font-weight:800;color:var(--texto);margin-bottom:2px;line-height:1.3;}
+.cracha .cargo{font-size:.65rem;color:var(--sub);margin-bottom:10px;}
+.cracha .qr-box{display:flex;justify-content:center;margin-bottom:8px;}
+.cracha .qr-box canvas, .cracha .qr-box img{border-radius:8px;}
+.cracha .emp-id{font-size:.65rem;font-weight:700;color:var(--sub);background:var(--cinza);padding:3px 10px;border-radius:20px;display:inline-block;}
+
+/* BOTÃO IMPRIMIR TODOS */
+.print-bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:18px;}
+
+/* LOADING */
+.loading{text-align:center;padding:40px;color:var(--sub);}
+.spinner{width:32px;height:32px;border:3px solid var(--borda);border-top-color:var(--rosa);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 12px;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* PRINT */
+@media print{
+  header,#no-print{display:none!important;}
+  body{background:#fff;}
+  .card{box-shadow:none;border:none;}
+  .cracha{border:1.5px solid #ccc;break-inside:avoid;}
+  .btn{display:none;}
+}
+
+/* TELA DE SENHA */
+#tela-senha{position:fixed;inset:0;background:linear-gradient(135deg,#1a1a2e,#0f3460);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;}
+.senha-box{background:#16213e;border:1.5px solid #ffffff15;border-radius:22px;padding:32px;width:100%;max-width:340px;text-align:center;box-shadow:0 20px 60px #0008;}
+.senha-box .logo-s{font-size:3rem;margin-bottom:12px;}
+.senha-box h2{font-size:1.3rem;font-weight:900;color:#F472B6;margin-bottom:6px;}
+.senha-box p{font-size:.82rem;color:#a0aec0;margin-bottom:24px;}
+.senha-box input{width:100%;padding:13px 16px;border:1.5px solid #ffffff20;border-radius:12px;background:#0f3460;color:#f0f0f0;font-family:'Montserrat',sans-serif;font-size:1.1rem;font-weight:700;text-align:center;letter-spacing:4px;margin-bottom:14px;}
+.senha-box input:focus{outline:none;border-color:#F472B6;}
+.senha-box button{width:100%;padding:13px;border:none;border-radius:12px;background:linear-gradient(135deg,#F472B6,#DB2777);color:#fff;font-family:'Montserrat',sans-serif;font-size:1rem;font-weight:800;cursor:pointer;}
+.erro-s{color:#ff4d6d;font-size:.82rem;margin-top:10px;display:none;font-weight:700;}
+@media print { #tela-senha { display:none !important; } }
+</style>
+</head>
+<body>
+
+<div id="tela-senha">
+  <div class="senha-box">
+    <div class="logo-s">🔐</div>
+    <h2>Acesso Restrito</h2>
+    <p>Digite a senha de administrador para visualizar os crachás</p>
+    <input type="password" id="input-senha-admin" placeholder="••••••••" onkeydown="if(event.key==='Enter')verificarSenhaAdmin()">
+    <button onclick="verificarSenhaAdmin()">🔓 Entrar</button>
+    <div class="erro-s" id="erro-senha-admin">❌ Senha incorreta!</div>
+  </div>
+</div>
+
+<header>
+  <div class="hl">
+    <div class="logo">🍼</div>
+    <div><h1>Funcionários e QR Codes</h1><p>Visualize e imprima os crachás dos funcionários</p></div>
+  </div>
+  <button class="btn btn-cinza" onclick="location.href='admin.html'">← Voltar ao Admin</button>
+</header>
+
+<main>
+  <div class="card">
+    <div class="print-bar" id="no-print">
+      <button class="btn btn-rosa" onclick="window.print()">🖨️ Imprimir todos os crachás</button>
+      <span style="font-size:.8rem;color:var(--sub)">Cada crachá tem o QR Code único do funcionário</span>
+    </div>
+    <h2>🪪 Crachás com QR Code</h2>
+    <div class="crachas-grid" id="crachas">
+      <div class="loading"><div class="spinner"></div>Carregando funcionários…</div>
+    </div>
+  </div>
+</main>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, onValue, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey:"AIzaSyDQ6EUH_HBLYd76HMCdlgupNcwzTHvgido",
+  authDomain:"bambam-ponto.firebaseapp.com",
+  databaseURL:"https://bambam-ponto-default-rtdb.firebaseio.com",
+  projectId:"bambam-ponto",
+  storageBucket:"bambam-ponto.firebasestorage.app",
+  messagingSenderId:"30916647304",
+  appId:"1:30916647304:web:70323b427dbdd0e51d423d"
+};
+const app = initializeApp(firebaseConfig);
+const db  = getDatabase(app);
+
+function iniciais(n){const p=n.trim().split(' ');return(p[0][0]+(p[1]?.[0]||'')).toUpperCase();}
+
+// ── AUTENTICAÇÃO ──
+async function sha256(txt){
+  const buf=new TextEncoder().encode(txt);
+  const hash=await crypto.subtle.digest('SHA-256',buf);
+  return Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+async function checarSenhaAdmin(){
+  const localHash=localStorage.getItem('bambam_hash_admin');
+  const localExp=parseInt(localStorage.getItem('bambam_exp_admin')||'0');
+  if(!localHash||localExp<Date.now()){
+    localStorage.removeItem('bambam_hash_admin');
+    localStorage.removeItem('bambam_exp_admin');
+    return;
+  }
+  const snap=await get(ref(db,'config/senha_admin_hash'));
+  const hashRemoto=snap.val();
+  if(hashRemoto && localHash===hashRemoto){
+    document.getElementById('tela-senha').style.display='none';
+    carregarFuncionarios();
+  } else {
+    localStorage.removeItem('bambam_hash_admin');
+    localStorage.removeItem('bambam_exp_admin');
+  }
+}
+
+window.verificarSenhaAdmin=async function(){
+  const digitada=document.getElementById('input-senha-admin').value.trim();
+  if(!digitada) return;
+  const hashDigitada=await sha256(digitada);
+  const snapHash=await get(ref(db,'config/senha_admin_hash'));
+  const hashRemoto=snapHash.val();
+
+  let ok=false;
+  if(hashRemoto){
+    ok=(hashDigitada===hashRemoto);
+  } else {
+    // Fallback para formato antigo (apenas leitura, não migra aqui)
+    const snapPlain=await get(ref(db,'config/senha_admin'));
+    const plain=snapPlain.val();
+    if(plain && digitada===plain) ok=true;
+  }
+
+  if(ok){
+    localStorage.setItem('bambam_hash_admin',hashDigitada);
+    localStorage.setItem('bambam_exp_admin',String(Date.now()+30*24*60*60*1000));
+    document.getElementById('tela-senha').style.display='none';
+    carregarFuncionarios();
+  } else {
+    document.getElementById('erro-senha-admin').style.display='block';
+    document.getElementById('input-senha-admin').value='';
+    setTimeout(()=>{document.getElementById('erro-senha-admin').style.display='none';},3000);
+  }
+};
+
+function carregarFuncionarios(){
+  onValue(ref(db,'funcionarios'), snap => {
+    const d = snap.val();
+    const container = document.getElementById('crachas');
+    if (!d) {
+      container.innerHTML = '<div class="loading">Nenhum funcionário cadastrado.</div>';
+      return;
+    }
+    const funcs = Object.values(d).sort((a,b)=>a.nome.localeCompare(b.nome));
+    container.innerHTML = '';
+
+    funcs.forEach(f => {
+      const div = document.createElement('div');
+      div.className = 'cracha';
+      div.innerHTML = `
+        <div class="av">${iniciais(f.nome)}</div>
+        <div class="empresa">🍼 BAMBAM BABY</div>
+        <div class="nome">${f.nome}</div>
+        <div class="cargo">${f.cargo || 'Colaborador'}</div>
+        <div class="qr-box" id="qr-${f.id}"></div>
+        <div class="emp-id">🪪 ${f.id}</div>
+      `;
+      container.appendChild(div);
+
+      setTimeout(() => {
+        new QRCode(document.getElementById('qr-'+f.id), {
+          text: f.id,
+          width: 120,
+          height: 120,
+          colorDark: '#1F2937',
+          colorLight: '#ffffff',
+          correctLevel: QRCode.CorrectLevel.H
+        });
+      }, 100);
+    });
+  });
+}
+
+checarSenhaAdmin();
+</script>
+</body>
+</html>

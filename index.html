@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="BamBam Ponto">
+<meta name="theme-color" content="#DB2777">
+<title>BAMBAM BABY – Ponto</title>
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="icon" type="image/png" href="icon.png">
+<link rel="manifest" href="manifest.json">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;900&family=Baloo+2:wght@700;800&display=swap');
+:root{--rosa:#FF6B9D;--roxo:#C678DD;--azul:#61AFEF;--verde:#98C379;--amarelo:#E5C07B;--bg:#1a1a2e;--card:#16213e;--card2:#0f3460;--text:#f0f0f0;--sub:#a0aec0;--radius:18px;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;align-items:center;}
+
+#tela-senha{position:fixed;inset:0;background:linear-gradient(135deg,#1a1a2e,#0f3460);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px;}
+.senha-box{background:#16213e;border:1.5px solid #ffffff15;border-radius:22px;padding:32px;width:100%;max-width:340px;text-align:center;box-shadow:0 20px 60px #0008;}
+.senha-box .logo-s{font-size:3rem;margin-bottom:12px;}
+.senha-box h2{font-family:'Baloo 2',cursive;font-size:1.4rem;color:var(--rosa);margin-bottom:6px;}
+.senha-box p{font-size:.82rem;color:var(--sub);margin-bottom:24px;}
+.senha-box input{width:100%;padding:13px 16px;border:1.5px solid #ffffff20;border-radius:12px;background:#0f3460;color:#f0f0f0;font-family:'Nunito',sans-serif;font-size:1.2rem;font-weight:700;text-align:center;letter-spacing:4px;margin-bottom:14px;}
+.senha-box input:focus{outline:none;border-color:var(--rosa);}
+.senha-box button{width:100%;padding:13px;border:none;border-radius:12px;background:linear-gradient(90deg,var(--rosa),var(--roxo));color:#fff;font-family:'Nunito',sans-serif;font-size:1rem;font-weight:800;cursor:pointer;}
+.erro{color:#ff4d6d;font-size:.82rem;margin-top:10px;display:none;font-weight:700;}
+
+header{width:100%;background:linear-gradient(135deg,#C678DD,#FF6B9D);padding:16px 24px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 4px 20px #FF6B9D55;}
+header h1{font-family:'Baloo 2',cursive;font-size:1.4rem;color:#fff;}
+.badge{background:#fff3;border:1.5px solid #fff6;border-radius:30px;padding:4px 14px;font-size:.78rem;font-weight:700;color:#fff;}
+
+#app{width:92%;max-width:480px;margin:20px auto 80px;display:flex;flex-direction:column;gap:16px;}
+.card{background:var(--card);border-radius:var(--radius);padding:20px;box-shadow:0 4px 24px #0004;border:1px solid #ffffff0f;}
+.card h2{font-family:'Baloo 2',cursive;font-size:1.05rem;color:var(--rosa);margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+
+#clock{text-align:center;font-size:2.2rem;font-weight:900;font-family:'Baloo 2',cursive;color:var(--azul);letter-spacing:2px;}
+#date-str{text-align:center;font-size:.82rem;color:var(--sub);margin-top:2px;}
+
+#btn-excecao{
+  padding:8px 16px;border:none;border-radius:30px;
+  background:#E5C07B33;border:1.5px solid #E5C07B88;
+  color:#E5C07B;font-family:'Nunito',sans-serif;
+  font-size:.75rem;font-weight:800;cursor:pointer;
+  transition:.2s;display:inline-flex;align-items:center;gap:5px;
+  box-shadow:0 2px 10px #E5C07B33;
+}
+#btn-excecao:active{transform:scale(.95);}
+#btn-excecao.ativo{
+  background:#ff4d6d33;border-color:#ff4d6d;
+  color:#ff4d6d;animation:pulseBtn 1.5s infinite;
+}
+@keyframes pulseBtn{0%,100%{box-shadow:0 2px 10px #ff4d6d33}50%{box-shadow:0 4px 18px #ff4d6d66}}
+.excecao-wrap{display:flex;justify-content:flex-start;padding:0 4px;}
+
+#reader{border-radius:12px;overflow:hidden;background:#000;min-height:220px;}
+#reader video{border-radius:12px;}
+
+#log-list{list-style:none;display:flex;flex-direction:column;gap:7px;max-height:200px;overflow-y:auto;}
+#log-list li{background:var(--card2);border-radius:10px;padding:9px 13px;font-size:.8rem;display:flex;justify-content:space-between;align-items:center;gap:8px;}
+#log-list li .log-name{font-weight:700;flex:1;}
+#log-list li .log-action{color:var(--sub);font-size:.75rem;}
+#log-list li .log-time{color:var(--amarelo);font-weight:700;white-space:nowrap;}
+
+#admin-btn{position:fixed;bottom:20px;right:20px;background:var(--card2);border:1.5px solid var(--roxo);border-radius:50px;padding:10px 18px;color:var(--roxo);font-weight:700;font-size:.82rem;cursor:pointer;box-shadow:0 4px 16px #0006;transition:background .2s;}
+#admin-btn:hover{background:var(--roxo);color:#fff;}
+
+.modal-overlay{display:none;position:fixed;inset:0;background:#000a;z-index:200;align-items:center;justify-content:center;padding:20px;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--card);border:1.5px solid #ffffff15;border-radius:22px;padding:26px;width:100%;max-width:380px;box-shadow:0 20px 60px #0008;animation:popIn .25s ease;text-align:center;}
+@keyframes popIn{from{transform:scale(.88);opacity:0}to{transform:scale(1);opacity:1}}
+
+.emp-avatar{width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#C678DD,#FF6B9D);margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:900;color:#fff;}
+.emp-nome{font-size:1rem;font-weight:900;margin-bottom:3px;}
+.emp-cargo{font-size:.75rem;color:var(--sub);margin-bottom:12px;}
+.ultimo-box{border-radius:11px;padding:10px 14px;margin-bottom:12px;font-size:.82rem;font-weight:600;line-height:1.7;}
+.ultimo-entrada{background:#98C37922;border:1.5px solid var(--verde);color:var(--verde);}
+.ultimo-saida{background:#E5C07B22;border:1.5px solid var(--amarelo);color:var(--amarelo);}
+.ultimo-nenhum{background:#ffffff0a;border:1.5px solid #ffffff15;color:var(--sub);}
+.ultimo-box strong{font-size:.9rem;display:block;margin-top:3px;}
+.jornada-box{border-radius:11px;padding:8px 14px;margin-bottom:12px;font-size:.75rem;font-weight:600;background:#61AFEF22;border:1.5px solid var(--azul);color:var(--azul);line-height:1.6;}
+.bloqueio-box{border-radius:11px;padding:10px 14px;margin-bottom:12px;font-size:.82rem;font-weight:700;background:#ff4d6d22;border:1.5px solid #ff4d6d;color:#ff4d6d;text-align:center;}
+.excecao-aviso{border-radius:11px;padding:8px 14px;margin-bottom:12px;font-size:.78rem;font-weight:700;background:#E5C07B22;border:1.5px solid var(--amarelo);color:var(--amarelo);}
+
+.pergunta{font-size:.88rem;font-weight:700;margin-bottom:12px;}
+.escolha-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+.btn-escolha{padding:14px 10px;border-radius:13px;border:2px solid transparent;font-family:'Nunito',sans-serif;font-size:.85rem;font-weight:800;cursor:pointer;transition:.15s;text-align:center;line-height:1.5;}
+.btn-escolha:hover{transform:translateY(-2px);}
+.btn-escolha .ic{font-size:1.5rem;display:block;margin-bottom:4px;}
+.btn-e{background:#98C37922;border-color:var(--verde);color:var(--verde);}
+.btn-s{background:#FF6B9D22;border-color:var(--rosa);color:var(--rosa);}
+.btn-bloqueado{opacity:.3;cursor:not-allowed!important;transform:none!important;}
+
+.confirma-box{border-radius:11px;padding:12px;margin-bottom:12px;font-size:.85rem;font-weight:700;line-height:1.7;}
+.confirma-entrada{background:#98C37922;border:2px solid var(--verde);color:var(--verde);}
+.confirma-saida{background:#FF6B9D22;border:2px solid var(--rosa);color:var(--rosa);}
+
+.btn{display:block;width:100%;padding:12px;border:none;border-radius:12px;font-family:'Nunito',sans-serif;font-size:.92rem;font-weight:800;cursor:pointer;transition:.15s;margin-bottom:8px;}
+.btn:active{transform:scale(.97);}
+.btn-verde-solid{background:linear-gradient(90deg,#56d275,#98C379);color:#fff;}
+.btn-rosa-solid{background:linear-gradient(90deg,#FF6B9D,#C678DD);color:#fff;}
+.btn-cancelar{background:#ffffff0f;color:var(--sub);border:1.5px solid #ffffff15;}
+.btn-voltar{background:#ffffff0f;color:var(--sub);font-size:.8rem;padding:8px;margin-bottom:0;}
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-thumb{background:#ffffff22;border-radius:99px;}
+</style>
+</head>
+<body>
+
+<div id="tela-senha">
+  <div class="senha-box">
+    <div class="logo-s">🍼</div>
+    <h2>BAMBAM BABY</h2>
+    <p>Digite a senha para autorizar este dispositivo</p>
+    <input type="password" id="input-senha" placeholder="••••••" onkeydown="if(event.key==='Enter')verificarSenha()">
+    <button onclick="verificarSenha()">🔓 Autorizar</button>
+    <div class="erro" id="erro-senha">❌ Senha incorreta!</div>
+  </div>
+</div>
+
+<header>
+  <h1>🍼 BAMBAM BABY</h1>
+  <span class="badge" id="wifi-badge">Conectando…</span>
+</header>
+
+<div id="app">
+  <div class="card">
+    <div id="clock">--:--:--</div>
+    <div id="date-str">carregando...</div>
+  </div>
+
+  <div class="card">
+    <h2>📷 Escanear Crachá</h2>
+    <div id="reader"></div>
+  </div>
+  <div class="excecao-wrap">
+    <button id="btn-excecao" onclick="toggleExcecao()">⚠️ Exceção</button>
+  </div>
+
+  <div class="card">
+    <h2>📋 Registros de hoje</h2>
+    <ul id="log-list"><li style="color:var(--sub);font-size:.85rem;padding:8px">Nenhum registro ainda.</li></ul>
+  </div>
+</div>
+
+<button id="admin-btn" onclick="location.href='admin.html'">⚙️ Admin</button>
+
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div id="step1">
+      <div class="emp-avatar" id="av1"></div>
+      <div class="emp-nome" id="nm1">—</div>
+      <div class="emp-cargo" id="cg1">—</div>
+      <div class="jornada-box" id="jornada-box" style="display:none"></div>
+      <div class="ultimo-box" id="ultimo-box">🔍 Buscando…</div>
+      <div class="bloqueio-box" id="bloqueio-box" style="display:none"></div>
+      <div class="excecao-aviso" id="excecao-aviso" style="display:none">⚠️ EXCEÇÃO ATIVA — Registro liberado fora do horário</div>
+      <div class="pergunta" id="pergunta-txt">O que deseja registrar?</div>
+      <div class="escolha-grid">
+        <button class="btn-escolha btn-e" id="btn-entrada" onclick="escolher('entrada')"><span class="ic">✅</span>ENTRADA</button>
+        <button class="btn-escolha btn-s" id="btn-saida" onclick="escolher('saida')"><span class="ic">🚪</span>SAÍDA</button>
+      </div>
+      <button class="btn btn-cancelar" onclick="fecharModal()">Cancelar</button>
+    </div>
+    <div id="step2" style="display:none">
+      <div class="emp-avatar" id="av2"></div>
+      <div class="emp-nome" id="nm2">—</div>
+      <div class="emp-cargo" id="cg2">—</div>
+      <div class="confirma-box" id="confirma-box"></div>
+      <button class="btn" id="btn-confirmar" onclick="confirmarPonto()">Confirmar</button>
+      <button class="btn btn-voltar" onclick="voltarStep1()">← Voltar</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, onValue, push, set, get, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig={apiKey:"AIzaSyDQ6EUH_HBLYd76HMCdlgupNcwzTHvgido",authDomain:"bambam-ponto.firebaseapp.com",databaseURL:"https://bambam-ponto-default-rtdb.firebaseio.com",projectId:"bambam-ponto",storageBucket:"bambam-ponto.firebasestorage.app",messagingSenderId:"30916647304",appId:"1:30916647304:web:70323b427dbdd0e51d423d"};
+const app=initializeApp(firebaseConfig);
+const db=getDatabase(app);
+
+const DIAS_KEY=['dom','seg','ter','qua','qui','sex','sab'];
+
+let funcionarios={},logHoje=[],funcSel=null,tipoEsc=null,bloqueado=false;
+let modoExcecao=false;
+
+const dh=()=>new Date().toISOString().split('T')[0];
+const ini=(n)=>{const p=n.trim().split(' ');return(p[0][0]+(p[1]?.[0]||'')).toUpperCase();};
+const toMin=(h)=>{const[hh,mm]=h.split(':').map(Number);return hh*60+mm;};
+
+// ── AUTORIZAÇÃO (com hash SHA-256, sem senha em plain text) ──
+async function sha256(txt){
+  const buf=new TextEncoder().encode(txt);
+  const hash=await crypto.subtle.digest('SHA-256',buf);
+  return Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+async function checarAutorizacao(){
+  const localHash=localStorage.getItem('bambam_hash_index');
+  const localExp=parseInt(localStorage.getItem('bambam_exp_index')||'0');
+  if(!localHash||localExp<Date.now()){
+    localStorage.removeItem('bambam_hash_index');
+    localStorage.removeItem('bambam_exp_index');
+    return;
+  }
+  const snap=await get(ref(db,'config/senha_index_hash'));
+  const hashRemoto=snap.val();
+  if(hashRemoto && localHash===hashRemoto){
+    document.getElementById('tela-senha').style.display='none';
+    iniciarApp();
+  } else {
+    localStorage.removeItem('bambam_hash_index');
+    localStorage.removeItem('bambam_exp_index');
+  }
+}
+
+window.verificarSenha=async function(){
+  const digitada=document.getElementById('input-senha').value.trim();
+  if(!digitada) return;
+  const hashDigitada=await sha256(digitada);
+
+  // Busca hash oficial no Firebase
+  const snapHash=await get(ref(db,'config/senha_index_hash'));
+  const hashRemoto=snapHash.val();
+
+  let ok=false;
+  if(hashRemoto){
+    ok=(hashDigitada===hashRemoto);
+  } else {
+    // Migração automática: se ainda existe senha em plain text (versão antiga)
+    const snapPlain=await get(ref(db,'config/senha_index'));
+    const plain=snapPlain.val();
+    if(plain && digitada===plain){
+      ok=true;
+      // Migra para hash e apaga plain
+      await set(ref(db,'config/senha_index_hash'),hashDigitada);
+      try{await remove(ref(db,'config/senha_index'));}catch(e){}
+    }
+  }
+
+  if(ok){
+    // 30 dias de validade
+    localStorage.setItem('bambam_hash_index',hashDigitada);
+    localStorage.setItem('bambam_exp_index',String(Date.now()+30*24*60*60*1000));
+    document.getElementById('tela-senha').style.display='none';
+    iniciarApp();
+  } else {
+    document.getElementById('erro-senha').style.display='block';
+    document.getElementById('input-senha').value='';
+    setTimeout(()=>{document.getElementById('erro-senha').style.display='none';},3000);
+  }
+};
+
+// ── EXCEÇÃO ──
+window.toggleExcecao=function(){
+  modoExcecao=!modoExcecao;
+  const btn=document.getElementById('btn-excecao');
+  if(modoExcecao){
+    btn.classList.add('ativo');
+    btn.innerHTML='⚠️ EXCEÇÃO ATIVA';
+    mostrarToast('⚠️ Exceção ativada!','#E5C07B');
+  } else {
+    btn.classList.remove('ativo');
+    btn.innerHTML='⚠️ Exceção';
+    mostrarToast('✅ Exceção desativada.','#98C379');
+  }
+};
+
+function iniciarApp(){
+  function tick(){
+    const now=new Date();
+    document.getElementById('clock').textContent=now.toLocaleTimeString('pt-BR');
+    document.getElementById('date-str').textContent=now.toLocaleDateString('pt-BR',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  }
+  tick(); setInterval(tick,1000);
+  document.getElementById('wifi-badge').textContent='✅ Online';
+
+  onValue(ref(db,'funcionarios'),snap=>{
+    funcionarios={};
+    const d=snap.val();
+    if(d) Object.values(d).forEach(f=>{
+      // Só mostra funcionários ativos (sem data de desligamento ou desligamento futuro)
+      if(!f.desligamento||f.desligamento>=dh()) funcionarios[f.id]=f;
+    });
+  });
+
+  onValue(ref(db,'registros/'+dh()),snap=>{
+    logHoje=[]; const d=snap.val();
+    if(d) logHoje=Object.values(d);
+    renderLog();
+  });
+
+  iniciarScanner();
+  // (senhas padrão foram removidas por segurança — devem ser configuradas pelo admin)
+}
+
+function renderLog(){
+  const list=document.getElementById('log-list');
+  if(!logHoje.length){list.innerHTML='<li style="color:var(--sub);font-size:.85rem;padding:8px">Nenhum registro ainda.</li>';return;}
+  list.innerHTML=[...logHoje].reverse().slice(0,30).map(r=>`
+    <li>
+      <span class="log-name">${r.nome.split(' ')[0]}</span>
+      <span class="log-action">${r.tipo==='entrada'?'🟢':'🔴'} ${r.tipo==='entrada'?'Entrada':'Saída'}${r.excecao?' ⚠️':''}</span>
+      <span class="log-time">${r.hora}</span>
+    </li>`).join('');
+}
+
+let scannerAtivo=false;
+function iniciarScanner(){
+  if(scannerAtivo)return; scannerAtivo=true;
+  const qr=new Html5Qrcode("reader");
+  qr.start({facingMode:"environment"},{fps:10,qrbox:{width:210,height:210}},
+    txt=>{if(!bloqueado){bloqueado=true;abrirModal(txt);setTimeout(()=>{bloqueado=false;},5000);}},
+    ()=>{}
+  ).catch(()=>{
+    document.getElementById('reader').innerHTML='<p style="color:var(--sub);padding:20px;text-align:center;font-size:.85rem">📵 Câmera não disponível.<br>Use HTTPS.</p>';
+  });
+}
+
+// ── JORNADA DO DIA ──
+function getJornadaDia(f,dataStr){
+  const diaSemana=new Date(dataStr+'T12:00:00').getDay();
+  const diaKey=DIAS_KEY[diaSemana];
+  if(!f.jornada||!f.jornada[diaKey]||!f.jornada[diaKey].length) return null;
+  return f.jornada[diaKey];
+}
+
+// ── VERIFICAR BLOQUEIO ──
+function verificarBloqueio(f,ultimoReg,dataStr){
+  if(modoExcecao) return {bloqueado:false};
+  const jornada=getJornadaDia(f,dataStr);
+  if(!jornada) return {bloqueado:false};
+  const agora=new Date();
+  const agoraMin=agora.getHours()*60+agora.getMinutes();
+
+  // Sem registro hoje → só entrada
+  if(!ultimoReg||ultimoReg.data!==dataStr){
+    return {bloqueado:false,apenasEntrada:true};
+  }
+
+  if(ultimoReg.tipo==='entrada'){
+    const entMin=toMin(ultimoReg.hora);
+    let periodoAtual=null;
+    for(const p of jornada){
+      if(entMin>=toMin(p.entrada)-90&&entMin<=toMin(p.saida)){periodoAtual=p;break;}
+    }
+    if(!periodoAtual) periodoAtual=jornada[0];
+    const liberaMin=toMin(periodoAtual.saida)-2;
+    if(agoraMin<liberaMin){
+      const falta=liberaMin-agoraMin;
+      const h=Math.floor(falta/60),m=falta%60;
+      return {
+        bloqueado:true,
+        motivo:`Saída liberada às ${periodoAtual.saida} (faltam ${h>0?h+'h ':''} ${m}min)`,
+        apenasEntrada:false
+      };
+    }
+  }
+  return {bloqueado:false};
+}
+
+// ── REGISTROS DE HOJE E ÚLTIMO ──
+async function buscarRegistrosHoje(empId){
+  const snap=await get(ref(db,'registros/'+dh()));
+  const val=snap.val();
+  if(!val) return [];
+  return Object.values(val).filter(r=>r.empId===empId).sort((a,b)=>a.hora.localeCompare(b.hora));
+}
+async function buscarUltimo(empId){
+  const hoje=new Date();
+  for(let i=0;i<7;i++){
+    const d=new Date(hoje); d.setDate(hoje.getDate()-i);
+    const ds=d.toISOString().split('T')[0];
+    const snap=await get(ref(db,'registros/'+ds));
+    const val=snap.val();
+    if(val){const regs=Object.values(val).filter(r=>r.empId===empId);if(regs.length)return regs[regs.length-1];}
+  }
+  return null;
+}
+
+// ── ABRIR MODAL ──
+window.abrirModal=async function(empId){
+  const f=funcionarios[empId];
+  if(!f){mostrarToast('❌ Crachá não reconhecido.','#ff4d6d');return;}
+
+  const hoje=dh();
+  const [regsHoje, ultimo] = await Promise.all([
+    buscarRegistrosHoje(f.id),
+    buscarUltimo(f.id)
+  ]);
+
+  funcSel=f; tipoEsc=null;
+  document.getElementById('av1').textContent=ini(f.nome);
+  document.getElementById('nm1').textContent=f.nome;
+  document.getElementById('cg1').textContent='🪪 '+f.id+' · '+(f.cargo||'Colaborador');
+  document.getElementById('step1').style.display='block';
+  document.getElementById('step2').style.display='none';
+  document.getElementById('modal').classList.add('open');
+
+  // Jornada do dia
+  const jornada=getJornadaDia(f,hoje);
+  const jornadaBox=document.getElementById('jornada-box');
+  if(jornada&&jornada.length){
+    jornadaBox.innerHTML='⏰ Jornada: '+jornada.map(p=>`${p.entrada}–${p.saida}`).join(' / ');
+    jornadaBox.style.display='block';
+  } else {
+    jornadaBox.style.display='none';
+  }
+
+  // Último registro
+  const ultimoHoje=regsHoje.length>0?regsHoje[regsHoje.length-1]:null;
+  const box=document.getElementById('ultimo-box');
+  if(!ultimoHoje&&(!ultimo||ultimo.data!==hoje)){
+    box.className='ultimo-box ultimo-nenhum';
+    box.innerHTML=ultimo?`Último: <strong>🚪 SAÍDA ${ultimo.data.split('-').reverse().join('/')} às ${ultimo.hora}</strong>`:'📋 Nenhum registro anterior.';
+  } else if(ultimoHoje&&ultimoHoje.tipo==='entrada'){
+    box.className='ultimo-box ultimo-entrada';
+    box.innerHTML=`Último hoje: <strong>✅ ENTRADA às ${ultimoHoje.hora}${ultimoHoje.excecao?' ⚠️':''}</strong>`;
+  } else if(ultimoHoje){
+    box.className='ultimo-box ultimo-saida';
+    box.innerHTML=`Último hoje: <strong>🚪 SAÍDA às ${ultimoHoje.hora}${ultimoHoje.excecao?' ⚠️':''}</strong>`;
+  }
+
+  // Reset botões
+  const btnE=document.getElementById('btn-entrada');
+  const btnS=document.getElementById('btn-saida');
+  const bloqueioBox=document.getElementById('bloqueio-box');
+  const excAviso=document.getElementById('excecao-aviso');
+  btnE.classList.remove('btn-bloqueado'); btnE.onclick=()=>escolher('entrada');
+  btnS.classList.remove('btn-bloqueado'); btnS.onclick=()=>escolher('saida');
+  bloqueioBox.style.display='none';
+  excAviso.style.display=modoExcecao?'block':'none';
+
+  // Verifica próximo registro esperado
+  const prox=verificarProximoRegistro(f, regsHoje, hoje);
+
+  if(prox.apenasEntrada){
+    // Primeiro do dia → só entrada
+    btnS.classList.add('btn-bloqueado');
+    btnS.onclick=()=>mostrarToast('⚠️ Primeiro registro do dia deve ser ENTRADA!','#E5C07B');
+    document.getElementById('pergunta-txt').textContent='Registre sua ENTRADA:';
+  } else if(prox.proxTipo==='saida'){
+    // Próximo é saída → bloqueia entrada
+    btnE.classList.add('btn-bloqueado');
+    btnE.onclick=()=>mostrarToast('⚠️ Registre a SAÍDA antes de uma nova entrada!','#E5C07B');
+    if(prox.bloqueado){
+      // Saída bloqueada por horário → mostra motivo
+      bloqueioBox.innerHTML='⏱️ '+prox.motivo;
+      bloqueioBox.style.display='block';
+      btnS.classList.add('btn-bloqueado');
+      btnS.onclick=()=>mostrarToast('⏱️ Acione Exceção para liberar saída antecipada.','#E5C07B');
+      document.getElementById('pergunta-txt').textContent='Saída não liberada ainda:';
+    } else {
+      document.getElementById('pergunta-txt').textContent=modoExcecao?'Registrar SAÍDA (Exceção):':'Registre sua SAÍDA:';
+    }
+  } else if(prox.proxTipo==='entrada'){
+    // Próximo é entrada → bloqueia saída
+    btnS.classList.add('btn-bloqueado');
+    btnS.onclick=()=>mostrarToast('⚠️ Registre a ENTRADA antes de uma nova saída!','#E5C07B');
+    document.getElementById('pergunta-txt').textContent='Registre sua ENTRADA:';
+  }
+
+  if(modoExcecao&&prox.bloqueado){
+    document.getElementById('pergunta-txt').textContent='⚠️ Exceção ativa — Saída liberada:';
+    btnS.classList.remove('btn-bloqueado');
+    btnS.onclick=()=>escolher('saida');
+    bloqueioBox.style.display='none';
+  }
+};
+
+window.escolher=function(tipo){
+  tipoEsc=tipo;
+  const f=funcSel,agora=new Date().toLocaleTimeString('pt-BR');
+  document.getElementById('av2').textContent=ini(f.nome);
+  document.getElementById('nm2').textContent=f.nome;
+  document.getElementById('cg2').textContent='🪪 '+f.id+' · '+(f.cargo||'Colaborador');
+  const box=document.getElementById('confirma-box'),btn=document.getElementById('btn-confirmar');
+  const excLabel=modoExcecao?' ⚠️EXCEÇÃO':'';
+  if(tipo==='entrada'){
+    box.className='confirma-box confirma-entrada';
+    box.innerHTML=`Registrando:<br><strong>✅ ENTRADA${excLabel} às ${agora}</strong>`;
+    btn.className='btn btn-verde-solid';
+    btn.innerHTML='✅ Confirmar ENTRADA';
+  } else {
+    box.className='confirma-box confirma-saida';
+    box.innerHTML=`Registrando:<br><strong>🚪 SAÍDA${excLabel} às ${agora}</strong>`;
+    btn.className='btn btn-rosa-solid';
+    btn.innerHTML='🚪 Confirmar SAÍDA';
+  }
+  document.getElementById('step1').style.display='none';
+  document.getElementById('step2').style.display='block';
+};
+
+window.voltarStep1=function(){tipoEsc=null;document.getElementById('step1').style.display='block';document.getElementById('step2').style.display='none';};
+
+window.confirmarPonto=async function(){
+  if(!funcSel||!tipoEsc)return;
+  const f=funcSel,agora=new Date();
+  const reg={empId:f.id,nome:f.nome,cargo:f.cargo||'Colaborador',tipo:tipoEsc,data:dh(),hora:agora.toLocaleTimeString('pt-BR'),timestamp:agora.toISOString(),excecao:modoExcecao};
+  try{
+    await push(ref(db,'registros/'+dh()),reg);
+    if(navigator.vibrate)navigator.vibrate([80,40,80]);
+    if(modoExcecao){
+      modoExcecao=false;
+      const btn=document.getElementById('btn-excecao');
+      btn.classList.remove('ativo');
+      btn.innerHTML='⚠️ Exceção';
+    }
+    fecharModal();
+    mostrarToast(tipoEsc==='entrada'?`✅ Boa chegada, ${f.nome.split(' ')[0]}!`:`👋 Até logo, ${f.nome.split(' ')[0]}!`,tipoEsc==='entrada'?'#98C379':'#FF6B9D');
+  }catch(e){alert('❌ Erro ao registrar.');}
+};
+
+window.fecharModal=function(){document.getElementById('modal').classList.remove('open');funcSel=null;tipoEsc=null;};
+document.getElementById('modal').addEventListener('click',function(e){if(e.target===this)fecharModal();});
+
+function mostrarToast(msg,cor){
+  let t=document.getElementById('toast');
+  if(!t){t=document.createElement('div');t.id='toast';Object.assign(t.style,{position:'fixed',bottom:'80px',left:'50%',transform:'translateX(-50%) translateY(80px)',color:'#fff',padding:'13px 26px',borderRadius:'30px',fontFamily:'Nunito,sans-serif',fontWeight:'800',fontSize:'.92rem',boxShadow:'0 8px 24px #0006',transition:'transform .3s',zIndex:'999',whiteSpace:'nowrap',maxWidth:'90vw',textAlign:'center'});document.body.appendChild(t);}
+  t.textContent=msg; t.style.background=cor||'#1F2937';
+  setTimeout(()=>{t.style.transform='translateX(-50%) translateY(0)';},10);
+  setTimeout(()=>{t.style.transform='translateX(-50%) translateY(80px)';},4000);
+}
+
+checarAutorizacao();
+</script>
+</body>
+</html>
