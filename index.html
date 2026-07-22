@@ -106,6 +106,13 @@ header h1{font-family:'Baloo 2',cursive;font-size:1.4rem;color:#fff;}
 .btn-voltar{background:#ffffff0f;color:var(--sub);font-size:.8rem;padding:8px;margin-bottom:0;}
 ::-webkit-scrollbar{width:4px;}
 ::-webkit-scrollbar-thumb{background:#ffffff22;border-radius:99px;}
+
+/* OFFLINE */
+#offline-bar{display:none;position:fixed;top:0;left:0;right:0;z-index:9999;background:#E5C07B;color:#1a1a2e;text-align:center;padding:8px 16px;font-family:'Nunito',sans-serif;font-size:.82rem;font-weight:800;}
+#offline-bar.show{display:block;}
+#sync-toast{display:none;position:fixed;top:48px;left:50%;transform:translateX(-50%);background:#98C379;color:#fff;padding:8px 20px;border-radius:20px;font-family:'Nunito',sans-serif;font-size:.8rem;font-weight:800;z-index:9998;box-shadow:0 4px 16px #0004;}
+#sync-toast.show{display:block;}
+.pendente-badge{position:absolute;top:-6px;right:-6px;background:#ff4d6d;color:#fff;border-radius:50%;width:18px;height:18px;font-size:.65rem;font-weight:900;display:flex;align-items:center;justify-content:center;}
 </style>
 </head>
 <body>
@@ -120,6 +127,9 @@ header h1{font-family:'Baloo 2',cursive;font-size:1.4rem;color:#fff;}
     <div class="erro" id="erro-senha">❌ Senha incorreta!</div>
   </div>
 </div>
+
+<div id="offline-bar">⚠️ SEM INTERNET — Registros sendo salvos localmente. Sincronizará quando conectar.</div>
+<div id="sync-toast"></div>
 
 <header>
   <h1>🍼 BAMBAM BABY</h1>
@@ -178,7 +188,7 @@ header h1{font-family:'Baloo 2',cursive;font-size:1.4rem;color:#fff;}
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, onValue, push, set, get, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getDatabase, ref, onValue, push, set, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 const firebaseConfig={apiKey:"AIzaSyDQ6EUH_HBLYd76HMCdlgupNcwzTHvgido",authDomain:"bambam-ponto.firebaseapp.com",databaseURL:"https://bambam-ponto-default-rtdb.firebaseio.com",projectId:"bambam-ponto",storageBucket:"bambam-ponto.firebasestorage.app",messagingSenderId:"30916647304",appId:"1:30916647304:web:70323b427dbdd0e51d423d"};
 const app=initializeApp(firebaseConfig);
@@ -193,60 +203,22 @@ const dh=()=>new Date().toISOString().split('T')[0];
 const ini=(n)=>{const p=n.trim().split(' ');return(p[0][0]+(p[1]?.[0]||'')).toUpperCase();};
 const toMin=(h)=>{const[hh,mm]=h.split(':').map(Number);return hh*60+mm;};
 
-// ── AUTORIZAÇÃO (com hash SHA-256, sem senha em plain text) ──
-async function sha256(txt){
-  const buf=new TextEncoder().encode(txt);
-  const hash=await crypto.subtle.digest('SHA-256',buf);
-  return Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,'0')).join('');
-}
-
+// ── AUTORIZAÇÃO ──
 async function checarAutorizacao(){
-  const localHash=localStorage.getItem('bambam_hash_index');
-  const localExp=parseInt(localStorage.getItem('bambam_exp_index')||'0');
-  if(!localHash||localExp<Date.now()){
-    localStorage.removeItem('bambam_hash_index');
-    localStorage.removeItem('bambam_exp_index');
-    return;
-  }
-  const snap=await get(ref(db,'config/senha_index_hash'));
-  const hashRemoto=snap.val();
-  if(hashRemoto && localHash===hashRemoto){
+  const snap=await get(ref(db,'config/senha_index'));
+  const senhaAtual=snap.val()||'102030';
+  if(localStorage.getItem('bambam_senha_index')===senhaAtual){
     document.getElementById('tela-senha').style.display='none';
     iniciarApp();
-  } else {
-    localStorage.removeItem('bambam_hash_index');
-    localStorage.removeItem('bambam_exp_index');
   }
 }
 
 window.verificarSenha=async function(){
   const digitada=document.getElementById('input-senha').value.trim();
-  if(!digitada) return;
-  const hashDigitada=await sha256(digitada);
-
-  // Busca hash oficial no Firebase
-  const snapHash=await get(ref(db,'config/senha_index_hash'));
-  const hashRemoto=snapHash.val();
-
-  let ok=false;
-  if(hashRemoto){
-    ok=(hashDigitada===hashRemoto);
-  } else {
-    // Migração automática: se ainda existe senha em plain text (versão antiga)
-    const snapPlain=await get(ref(db,'config/senha_index'));
-    const plain=snapPlain.val();
-    if(plain && digitada===plain){
-      ok=true;
-      // Migra para hash e apaga plain
-      await set(ref(db,'config/senha_index_hash'),hashDigitada);
-      try{await remove(ref(db,'config/senha_index'));}catch(e){}
-    }
-  }
-
-  if(ok){
-    // 30 dias de validade
-    localStorage.setItem('bambam_hash_index',hashDigitada);
-    localStorage.setItem('bambam_exp_index',String(Date.now()+30*24*60*60*1000));
+  const snap=await get(ref(db,'config/senha_index'));
+  const correta=snap.val()||'102030';
+  if(digitada===correta){
+    localStorage.setItem('bambam_senha_index',correta);
     document.getElementById('tela-senha').style.display='none';
     iniciarApp();
   } else {
@@ -279,6 +251,8 @@ function iniciarApp(){
   }
   tick(); setInterval(tick,1000);
   document.getElementById('wifi-badge').textContent='✅ Online';
+  atualizarBadgeOffline();
+  sincronizarPendentes();
 
   onValue(ref(db,'funcionarios'),snap=>{
     funcionarios={};
@@ -296,7 +270,9 @@ function iniciarApp(){
   });
 
   iniciarScanner();
-  // (senhas padrão foram removidas por segurança — devem ser configuradas pelo admin)
+  // Salva senhas padrão
+  get(ref(db,'config/senha_index')).then(s=>{if(!s.val())set(ref(db,'config/senha_index'),'102030');});
+  get(ref(db,'config/senha_admin')).then(s=>{if(!s.val())set(ref(db,'config/senha_admin'),'Bam102030');});
 }
 
 function renderLog(){
@@ -315,7 +291,7 @@ function iniciarScanner(){
   if(scannerAtivo)return; scannerAtivo=true;
   const qr=new Html5Qrcode("reader");
   qr.start({facingMode:"environment"},{fps:10,qrbox:{width:210,height:210}},
-    txt=>{if(!bloqueado){bloqueado=true;abrirModal(txt);setTimeout(()=>{bloqueado=false;},5000);}},
+    txt=>{if(!bloqueado){bloqueado=true;abrirModal(txt);setTimeout(()=>{bloqueado=false;},300000);}},
     ()=>{}
   ).catch(()=>{
     document.getElementById('reader').innerHTML='<p style="color:var(--sub);padding:20px;text-align:center;font-size:.85rem">📵 Câmera não disponível.<br>Use HTTPS.</p>';
@@ -502,22 +478,117 @@ window.confirmarPonto=async function(){
   if(!funcSel||!tipoEsc)return;
   const f=funcSel,agora=new Date();
   const reg={empId:f.id,nome:f.nome,cargo:f.cargo||'Colaborador',tipo:tipoEsc,data:dh(),hora:agora.toLocaleTimeString('pt-BR'),timestamp:agora.toISOString(),excecao:modoExcecao};
-  try{
-    await push(ref(db,'registros/'+dh()),reg);
-    if(navigator.vibrate)navigator.vibrate([80,40,80]);
-    if(modoExcecao){
-      modoExcecao=false;
-      const btn=document.getElementById('btn-excecao');
-      btn.classList.remove('ativo');
-      btn.innerHTML='⚠️ Exceção';
+
+  if(navigator.onLine){
+    try{
+      await push(ref(db,'registros/'+dh()),reg);
+      if(navigator.vibrate)navigator.vibrate([80,40,80]);
+      if(modoExcecao){
+        modoExcecao=false;
+        const btn=document.getElementById('btn-excecao');
+        btn.classList.remove('ativo');
+        btn.innerHTML='⚠️ Exceção';
+      }
+      fecharModal();
+      mostrarToast(tipoEsc==='entrada'?`✅ Boa chegada, ${f.nome.split(' ')[0]}!`:`👋 Até logo, ${f.nome.split(' ')[0]}!`,tipoEsc==='entrada'?'#98C379':'#FF6B9D');
+    }catch(e){
+      // Falhou mesmo com internet → salva offline
+      salvarOffline(reg);
     }
-    fecharModal();
-    mostrarToast(tipoEsc==='entrada'?`✅ Boa chegada, ${f.nome.split(' ')[0]}!`:`👋 Até logo, ${f.nome.split(' ')[0]}!`,tipoEsc==='entrada'?'#98C379':'#FF6B9D');
-  }catch(e){alert('❌ Erro ao registrar.');}
+  } else {
+    // Sem internet → salva localmente
+    salvarOffline(reg);
+  }
+
+  if(modoExcecao){
+    modoExcecao=false;
+    const btn=document.getElementById('btn-excecao');
+    btn.classList.remove('ativo');
+    btn.innerHTML='⚠️ Exceção';
+  }
+  fecharModal();
 };
 
 window.fecharModal=function(){document.getElementById('modal').classList.remove('open');funcSel=null;tipoEsc=null;};
 document.getElementById('modal').addEventListener('click',function(e){if(e.target===this)fecharModal();});
+
+
+// ── MODO OFFLINE ──
+const OFFLINE_KEY='bambam_offline_regs';
+
+function salvarOffline(reg){
+  const pendentes=getPendentes();
+  pendentes.push({...reg,_offlineId:Date.now()});
+  localStorage.setItem(OFFLINE_KEY,JSON.stringify(pendentes));
+  if(navigator.vibrate)navigator.vibrate([80,40,80]);
+  atualizarBadgeOffline();
+  mostrarToast(`📴 ${reg.nome.split(' ')[0]} — salvo localmente!`,'#E5C07B');
+  // Adiciona ao log local também
+  logHoje.push(reg);
+  renderLog();
+}
+
+function getPendentes(){
+  try{return JSON.parse(localStorage.getItem(OFFLINE_KEY)||'[]');}catch{return [];}
+}
+
+function atualizarBadgeOffline(){
+  const n=getPendentes().length;
+  document.getElementById('offline-bar').classList.toggle('show',!navigator.onLine||n>0);
+  if(n>0){
+    document.getElementById('offline-bar').textContent=
+      navigator.onLine
+        ? `🔄 Sincronizando ${n} registro(s) pendente(s)…`
+        : `⚠️ SEM INTERNET — ${n} registro(s) salvos localmente. Sincronizará ao conectar.`;
+  } else if(!navigator.onLine){
+    document.getElementById('offline-bar').textContent='⚠️ SEM INTERNET — Registros sendo salvos localmente.';
+  } else {
+    document.getElementById('offline-bar').classList.remove('show');
+  }
+}
+
+async function sincronizarPendentes(){
+  if(!navigator.onLine) return;
+  const pendentes=getPendentes();
+  if(!pendentes.length) return;
+
+  let sincronizados=0;
+  const falhos=[];
+
+  for(const reg of pendentes){
+    try{
+      const {_offlineId,...regLimpo}=reg;
+      await push(ref(db,'registros/'+reg.data),regLimpo);
+      sincronizados++;
+    }catch(e){
+      falhos.push(reg);
+    }
+  }
+
+  localStorage.setItem(OFFLINE_KEY,JSON.stringify(falhos));
+
+  if(sincronizados>0){
+    const toast=document.getElementById('sync-toast');
+    toast.textContent=`✅ ${sincronizados} registro(s) sincronizado(s)!`;
+    toast.classList.add('show');
+    setTimeout(()=>toast.classList.remove('show'),4000);
+  }
+  atualizarBadgeOffline();
+}
+
+// Monitora conexão
+window.addEventListener('online',()=>{
+  atualizarBadgeOffline();
+  sincronizarPendentes();
+});
+window.addEventListener('offline',()=>{
+  atualizarBadgeOffline();
+});
+
+// Tenta sincronizar a cada 30 segundos
+setInterval(()=>{
+  if(navigator.onLine) sincronizarPendentes();
+},30000);
 
 function mostrarToast(msg,cor){
   let t=document.getElementById('toast');
