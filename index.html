@@ -104,6 +104,29 @@ header h1{font-family:'Baloo 2',cursive;font-size:1.4rem;color:#fff;}
 .btn-rosa-solid{background:linear-gradient(90deg,#FF6B9D,#C678DD);color:#fff;}
 .btn-cancelar{background:#ffffff0f;color:var(--sub);border:1.5px solid #ffffff15;}
 .btn-voltar{background:#ffffff0f;color:var(--sub);font-size:.8rem;padding:8px;margin-bottom:0;}
+
+/* TELA DE CONFIRMAÇÃO */
+#tela-confirmacao{display:none;position:fixed;inset:0;z-index:500;align-items:center;justify-content:center;padding:20px;animation:fadeIn .2s ease;}
+#tela-confirmacao.show{display:flex;}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.conf-box{border-radius:28px;padding:40px 32px;width:100%;max-width:360px;text-align:center;box-shadow:0 20px 60px #0008;}
+.conf-box.entrada{background:linear-gradient(135deg,#1a3a2a,#0f3a1e);}
+.conf-box.saida{background:linear-gradient(135deg,#3a1a2a,#3a0f1e);}
+.conf-icon{font-size:5rem;margin-bottom:16px;animation:popIn2 .3s ease;}
+@keyframes popIn2{from{transform:scale(0)}to{transform:scale(1)}}
+.conf-tipo{font-size:1.1rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;opacity:.7;}
+.conf-nome{font-family:'Baloo 2',cursive;font-size:2rem;font-weight:900;color:#fff;margin-bottom:8px;line-height:1.2;}
+.conf-hora{font-size:1.4rem;font-family:monospace;font-weight:700;margin-bottom:24px;opacity:.8;}
+.conf-bar{height:5px;border-radius:10px;background:#ffffff33;overflow:hidden;margin-top:8px;}
+.conf-bar-fill{height:100%;border-radius:10px;animation:shrink 3s linear forwards;}
+@keyframes shrink{from{width:100%}to{width:0%}}
+.conf-box.entrada .conf-tipo{color:#98C379;}
+.conf-box.entrada .conf-hora{color:#98C379;}
+.conf-box.entrada .conf-bar-fill{background:#98C379;}
+.conf-box.saida .conf-tipo{color:#FF6B9D;}
+.conf-box.saida .conf-hora{color:#FF6B9D;}
+.conf-box.saida .conf-bar-fill{background:#FF6B9D;}
+
 ::-webkit-scrollbar{width:4px;}
 ::-webkit-scrollbar-thumb{background:#ffffff22;border-radius:99px;}
 
@@ -157,6 +180,17 @@ header h1{font-family:'Baloo 2',cursive;font-size:1.4rem;color:#fff;}
 </div>
 
 <button id="admin-btn" onclick="location.href='admin.html'">⚙️ Admin</button>
+
+<!-- TELA CONFIRMAÇÃO PONTO -->
+<div id="tela-confirmacao">
+  <div class="conf-box" id="conf-box">
+    <div class="conf-icon" id="conf-icon">✅</div>
+    <div class="conf-tipo" id="conf-tipo">ENTRADA</div>
+    <div class="conf-nome" id="conf-nome">—</div>
+    <div class="conf-hora" id="conf-hora">--:--:--</div>
+    <div class="conf-bar"><div class="conf-bar-fill" id="conf-bar-fill"></div></div>
+  </div>
+</div>
 
 <div class="modal-overlay" id="modal">
   <div class="modal">
@@ -490,7 +524,7 @@ window.confirmarPonto=async function(){
         btn.innerHTML='⚠️ Exceção';
       }
       fecharModal();
-      mostrarToast(tipoEsc==='entrada'?`✅ Boa chegada, ${f.nome.split(' ')[0]}!`:`👋 Até logo, ${f.nome.split(' ')[0]}!`,tipoEsc==='entrada'?'#98C379':'#FF6B9D');
+      mostrarConfirmacao(f.nome.split(' ')[0], tipoEsc, agora.toLocaleTimeString('pt-BR'));
     }catch(e){
       // Falhou mesmo com internet → salva offline
       salvarOffline(reg);
@@ -510,6 +544,23 @@ window.confirmarPonto=async function(){
 };
 
 window.fecharModal=function(){document.getElementById('modal').classList.remove('open');funcSel=null;tipoEsc=null;};
+
+function mostrarConfirmacao(nome, tipo, hora){
+  const box=document.getElementById('conf-box');
+  const tela=document.getElementById('tela-confirmacao');
+  box.className='conf-box '+tipo;
+  document.getElementById('conf-icon').textContent=tipo==='entrada'?'✅':'👋';
+  document.getElementById('conf-tipo').textContent=tipo==='entrada'?'ENTRADA REGISTRADA':'SAÍDA REGISTRADA';
+  document.getElementById('conf-nome').textContent=nome;
+  document.getElementById('conf-hora').textContent=hora;
+  // Reinicia animação da barra
+  const bar=document.getElementById('conf-bar-fill');
+  bar.style.animation='none';
+  bar.offsetHeight; // force reflow
+  bar.style.animation='shrink 3s linear forwards';
+  tela.classList.add('show');
+  setTimeout(()=>tela.classList.remove('show'),3000);
+}
 document.getElementById('modal').addEventListener('click',function(e){if(e.target===this)fecharModal();});
 
 
@@ -522,7 +573,8 @@ function salvarOffline(reg){
   localStorage.setItem(OFFLINE_KEY,JSON.stringify(pendentes));
   if(navigator.vibrate)navigator.vibrate([80,40,80]);
   atualizarBadgeOffline();
-  mostrarToast(`📴 ${reg.nome.split(' ')[0]} — salvo localmente!`,'#E5C07B');
+  mostrarConfirmacao(reg.nome.split(' ')[0], reg.tipo, reg.hora);
+  mostrarToast('📴 Sem internet — salvo localmente!','#E5C07B');
   // Adiciona ao log local também
   logHoje.push(reg);
   renderLog();
