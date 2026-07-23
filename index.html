@@ -230,7 +230,9 @@ const db=getDatabase(app);
 
 const DIAS_KEY=['dom','seg','ter','qua','qui','sex','sab'];
 
-let funcionarios={},logHoje=[],funcSel=null,tipoEsc=null,bloqueado=false;
+let funcionarios={},logHoje=[],funcSel=null,tipoEsc=null;
+let bloqueadoScanner=false; // bloqueia leitura dupla rápida do mesmo QR (1 segundo)
+let bloqueadoPorFunc={}; // bloqueia por funcionário por 5 minutos
 let modoExcecao=false;
 
 const dh=()=>new Date().toISOString().split('T')[0];
@@ -325,7 +327,22 @@ function iniciarScanner(){
   if(scannerAtivo)return; scannerAtivo=true;
   const qr=new Html5Qrcode("reader");
   qr.start({facingMode:"environment"},{fps:10,qrbox:{width:210,height:210}},
-    txt=>{if(!bloqueado){bloqueado=true;abrirModal(txt);setTimeout(()=>{bloqueado=false;},300000);}},
+    txt=>{
+      if(bloqueadoScanner) return;
+      // Bloqueia scanner por 1 segundo para evitar leitura dupla do mesmo QR
+      bloqueadoScanner=true;
+      setTimeout(()=>{bloqueadoScanner=false;},1000);
+
+      // Verifica bloqueio por funcionário (5 minutos)
+      const agora=Date.now();
+      if(bloqueadoPorFunc[txt]&&agora<bloqueadoPorFunc[txt]){
+        const restaSeg=Math.ceil((bloqueadoPorFunc[txt]-agora)/1000);
+        const min=Math.floor(restaSeg/60),seg=restaSeg%60;
+        mostrarToast(`⏱️ Aguarde ${min}:${String(seg).padStart(2,'0')} para registrar novamente.`,'#E5C07B');
+        return;
+      }
+      abrirModal(txt);
+    },
     ()=>{}
   ).catch(()=>{
     document.getElementById('reader').innerHTML='<p style="color:var(--sub);padding:20px;text-align:center;font-size:.85rem">📵 Câmera não disponível.<br>Use HTTPS.</p>';
@@ -523,6 +540,7 @@ window.confirmarPonto=async function(){
         btn.classList.remove('ativo');
         btn.innerHTML='⚠️ Exceção';
       }
+      bloqueadoPorFunc[f.id]=Date.now()+(5*60*1000);
       fecharModal();
       mostrarConfirmacao(f.nome.split(' ')[0], tipoEsc, agora.toLocaleTimeString('pt-BR'));
     }catch(e){
@@ -532,6 +550,7 @@ window.confirmarPonto=async function(){
   } else {
     // Sem internet → salva localmente
     salvarOffline(reg);
+  bloqueadoPorFunc[f.id]=Date.now()+(5*60*1000);
   }
 
   if(modoExcecao){
