@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>BAMBAM BABY – Admin</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&display=swap');
 :root{--rosa:#F472B6;--rosa-d:#DB2777;--verde:#16A34A;--cinza:#F8F8FA;--borda:#E5E7EB;--texto:#1F2937;--sub:#6B7280;--vermelho:#DC2626;--azul:#3B82F6;--laranja:#F59E0B;}
@@ -396,6 +397,23 @@ td.exc-cell{color:#92400E;font-family:monospace;font-size:.75rem;}
   </div>
 </div>
 
+<!-- MODAL QR CODE -->
+<div class="mo" id="mo-qr">
+  <div class="md" style="max-width:340px;text-align:center">
+    <h3>🪪 Crachá / QR Code</h3>
+    <div id="qr-func-info" style="margin-bottom:16px">
+      <div id="qr-func-avatar" style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#FFDCE8,#FFF0F6);border:2px solid var(--borda);margin:0 auto 10px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:900;color:var(--rosa-d)"></div>
+      <div id="qr-func-nome" style="font-size:1rem;font-weight:900;margin-bottom:3px"></div>
+      <div id="qr-func-id" style="font-size:.78rem;color:var(--sub)"></div>
+    </div>
+    <div id="qr-canvas" style="display:flex;justify-content:center;margin-bottom:18px"></div>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+      <button class="btn br" onclick="imprimirQR()">🖨️ Imprimir crachá</button>
+      <button class="btn bc" onclick="document.getElementById('mo-qr').classList.remove('open')">Fechar</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL FUNCIONÁRIO -->
 <div class="mo" id="mo">
   <div class="md">
@@ -480,64 +498,18 @@ const ini=(n)=>{const p=n.trim().split(' ');return(p[0][0]+(p[1]?.[0]||'')).toUp
 const fd=(d)=>d?d.split('-').reverse().join('/'):'';
 const toMin=(h)=>{const[hh,mm]=h.split(':').map(Number);return hh*60+mm;};
 
-// ── SENHA (com hash SHA-256, sem senha em plain text) ──
-async function sha256(txt){
-  const buf=new TextEncoder().encode(txt);
-  const hash=await crypto.subtle.digest('SHA-256',buf);
-  return Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,'0')).join('');
-}
-
+// ── SENHA ──
 async function checarSenhaAdmin(){
-  const localHash=localStorage.getItem('bambam_hash_admin');
-  const localExp=parseInt(localStorage.getItem('bambam_exp_admin')||'0');
-  if(!localHash||localExp<Date.now()){
-    localStorage.removeItem('bambam_hash_admin');
-    localStorage.removeItem('bambam_exp_admin');
-    return;
-  }
-  const snap=await get(ref(db,'config/senha_admin_hash'));
-  const hashRemoto=snap.val();
-  if(hashRemoto && localHash===hashRemoto){
-    document.getElementById('tela-senha').style.display='none';
-    iniciarAdmin();
-  } else {
-    localStorage.removeItem('bambam_hash_admin');
-    localStorage.removeItem('bambam_exp_admin');
-  }
+  const snap=await get(ref(db,'config/senha_admin'));
+  const sa=snap.val()||'Bam102030';
+  if(localStorage.getItem('bambam_senha_admin')===sa){document.getElementById('tela-senha').style.display='none';iniciarAdmin();}
 }
-
 window.verificarSenhaAdmin=async function(){
   const digitada=document.getElementById('input-senha-admin').value.trim();
-  if(!digitada) return;
-  const hashDigitada=await sha256(digitada);
-
-  const snapHash=await get(ref(db,'config/senha_admin_hash'));
-  const hashRemoto=snapHash.val();
-
-  let ok=false;
-  if(hashRemoto){
-    ok=(hashDigitada===hashRemoto);
-  } else {
-    // Migração automática de plain para hash
-    const snapPlain=await get(ref(db,'config/senha_admin'));
-    const plain=snapPlain.val();
-    if(plain && digitada===plain){
-      ok=true;
-      await set(ref(db,'config/senha_admin_hash'),hashDigitada);
-      try{await remove(ref(db,'config/senha_admin'));}catch(e){}
-    }
-  }
-
-  if(ok){
-    localStorage.setItem('bambam_hash_admin',hashDigitada);
-    localStorage.setItem('bambam_exp_admin',String(Date.now()+30*24*60*60*1000));
-    document.getElementById('tela-senha').style.display='none';
-    iniciarAdmin();
-  } else {
-    document.getElementById('erro-senha-admin').style.display='block';
-    document.getElementById('input-senha-admin').value='';
-    setTimeout(()=>{document.getElementById('erro-senha-admin').style.display='none';},3000);
-  }
+  const snap=await get(ref(db,'config/senha_admin'));
+  const correta=snap.val()||'Bam102030';
+  if(digitada===correta){localStorage.setItem('bambam_senha_admin',correta);document.getElementById('tela-senha').style.display='none';iniciarAdmin();}
+  else{document.getElementById('erro-senha-admin').style.display='block';document.getElementById('input-senha-admin').value='';setTimeout(()=>{document.getElementById('erro-senha-admin').style.display='none';},3000);}
 };
 
 function iniciarAdmin(){
@@ -555,17 +527,8 @@ function iniciarAdmin(){
     dash(); ultimos(lista);
   });
   onValue(ref(db,'feriados_locais'),snap=>{feriadosLocais=snap.val()||{};renderFeriados();});
-  // Nunca exibir a senha real — mostrar mascarado se estiver configurada
-  get(ref(db,'config/senha_index_hash')).then(s=>{
-    const el=document.getElementById('senha-index-atual');
-    if(s.val()) el.value='••••••••';
-    else get(ref(db,'config/senha_index')).then(p=>{el.value=p.val()?'•••••••• (formato antigo — troque)':'⚠️ não configurada';});
-  });
-  get(ref(db,'config/senha_admin_hash')).then(s=>{
-    const el=document.getElementById('senha-admin-atual');
-    if(s.val()) el.value='••••••••';
-    else get(ref(db,'config/senha_admin')).then(p=>{el.value=p.val()?'•••••••• (formato antigo — troque)':'⚠️ não configurada';});
-  });
+  get(ref(db,'config/senha_index')).then(s=>{document.getElementById('senha-index-atual').value=s.val()||'102030';});
+  get(ref(db,'config/senha_admin')).then(s=>{document.getElementById('senha-admin-atual').value=s.val()||'Bam102030';});
   renderFeriadosNacionais();
 }
 
@@ -573,22 +536,13 @@ window.alterarSenha=async function(tipo){
   const nova=document.getElementById(`nova-senha-${tipo}`).value.trim();
   const conf=document.getElementById(`conf-senha-${tipo}`).value.trim();
   if(!nova||nova!==conf){alert('⚠️ Senhas não conferem.');return;}
-  if(nova.length<8){alert('⚠️ Mínimo 8 caracteres. Use letras, números e símbolos.');return;}
-  // Bloqueia senhas óbvias
-  const fracas=['12345678','102030','bam102030','password','senha123','abcdefgh'];
-  if(fracas.includes(nova.toLowerCase())){alert('⚠️ Senha muito fraca. Escolha uma senha forte.');return;}
-
-  const hashNova=await sha256(nova);
-  await set(ref(db,`config/senha_${tipo}_hash`),hashNova);
-  // Remove versão antiga em plain text, se existir
-  try{await remove(ref(db,`config/senha_${tipo}`));}catch(e){}
-  // Invalida sessão local (força relogin no próximo acesso)
-  localStorage.removeItem(`bambam_hash_${tipo}`);
-  localStorage.removeItem(`bambam_exp_${tipo}`);
-  document.getElementById(`senha-${tipo}-atual`).value='••••••••';
+  if(nova.length<4){alert('⚠️ Mínimo 4 caracteres.');return;}
+  await set(ref(db,`config/senha_${tipo}`),nova);
+  localStorage.removeItem(`bambam_senha_${tipo}`);
+  document.getElementById(`senha-${tipo}-atual`).value=nova;
   document.getElementById(`nova-senha-${tipo}`).value='';
   document.getElementById(`conf-senha-${tipo}`).value='';
-  toast(`✅ Senha alterada! Todos os dispositivos precisarão fazer login novamente.`);
+  toast(`✅ Senha alterada!`);
 };
 
 window.trocarTab=function(t,b){
@@ -960,6 +914,7 @@ window.renderF=function(){
       </div>
       <div class="ea">
         <button class="btn bv bsm" onclick="abrirMo('${f.id}')">✏️</button>
+        <button class="btn bsm" style="background:#EFF6FF;color:#1D4ED8;border:1.5px solid #93C5FD" onclick="abrirQR('${f.id}','${f.nome}')">🪪 QR</button>
         <button class="btn bp bsm" onclick="remF('${f.id}')">🗑️</button>
       </div>
     </div>`;
@@ -1202,6 +1157,68 @@ window.fecharEdicao=function(){
   edEmpId='';edData='';edNome='';
 };
 document.getElementById('mo-edicao').addEventListener('click',function(e){if(e.target===this)fecharEdicao();});
+
+
+// ── QR CODE ──
+window.abrirQR=function(id,nome){
+  const f=funcs.find(x=>x.id===id);
+  if(!f)return;
+  const nomeDecoded=f.nome;
+
+  document.getElementById('qr-func-avatar').textContent=ini(nomeDecoded);
+  document.getElementById('qr-func-nome').textContent=nomeDecoded;
+  document.getElementById('qr-func-id').textContent='🪪 '+f.id+' · '+(f.cargo||'Colaborador');
+
+  // Limpa QR anterior
+  const canvas=document.getElementById('qr-canvas');
+  canvas.innerHTML='';
+
+  // Gera QR Code com o ID do funcionário
+  new QRCode(canvas,{
+    text: f.id,
+    width: 200,
+    height: 200,
+    colorDark: '#1F2937',
+    colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.H
+  });
+
+  document.getElementById('mo-qr').classList.add('open');
+};
+
+window.imprimirQR=function(){
+  const nome=document.getElementById('qr-func-nome').textContent;
+  const idCargo=document.getElementById('qr-func-id').textContent;
+  const qrImg=document.querySelector('#qr-canvas img')?.src||document.querySelector('#qr-canvas canvas')?.toDataURL()||'';
+
+  const win=window.open('','_blank');
+  win.document.write(`
+    <html><head><title>Crachá — ${nome}</title>
+    <style>
+      body{font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#f0f0f0;}
+      .cracha{background:#fff;border-radius:16px;padding:28px 24px;text-align:center;box-shadow:0 4px 24px #0002;width:240px;}
+      .logo{font-size:2rem;margin-bottom:6px;}
+      .empresa{font-size:.8rem;font-weight:700;color:#DB2777;letter-spacing:1px;margin-bottom:16px;}
+      .qr{margin:0 auto 16px;}
+      .nome{font-size:1rem;font-weight:900;color:#1F2937;margin-bottom:4px;}
+      .info{font-size:.72rem;color:#6B7280;}
+      @media print{body{background:#fff;}.cracha{box-shadow:none;}}
+    </style>
+    </head><body>
+    <div class="cracha">
+      <div class="logo">🍼</div>
+      <div class="empresa">BAMBAM BABY</div>
+      <div class="qr"><img src="${qrImg}" width="180" height="180"></div>
+      <div class="nome">${nome}</div>
+      <div class="info">${idCargo}</div>
+    </div>
+    <script>window.onload=()=>{window.print();}<\/script>
+    </body></html>
+  `);
+  win.document.close();
+};
+
+document.getElementById('mo-qr').addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});
 
 function toast(msg){
   let t=document.getElementById('toast');
