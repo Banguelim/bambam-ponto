@@ -531,21 +531,20 @@ window.confirmarPonto=async function(){
   const f=funcSel,agora=new Date();
   const reg={empId:f.id,nome:f.nome,cargo:f.cargo||'Colaborador',tipo:tipoEsc,data:dh(),hora:agora.toLocaleTimeString('pt-BR'),timestamp:agora.toISOString(),excecao:modoExcecao};
 
-  // Tira foto só na primeira ENTRADA do dia
-  let fotoBase64=null;
-  if(tipoEsc==='entrada'){
-    const deveFoto=await deveTomarFoto(f.id);
-    if(deveFoto){
-      fotoBase64=await tirarFoto();
-    }
-  }
-
   if(navigator.onLine){
     try{
       await push(ref(db,'registros/'+dh()),reg);
-      // Salva foto de auditoria se for primeira entrada
-      if(fotoBase64) await salvarFotoAuditoria(f.id,f.nome,fotoBase64);
       if(navigator.vibrate)navigator.vibrate([80,40,80]);
+      // Tira foto em segundo plano APÓS confirmar — não bloqueia o app
+      if(tipoEsc==='entrada'){
+        deveTomarFoto(f.id).then(deve=>{
+          if(deve){
+            tirarFoto().then(foto=>{
+              if(foto) salvarFotoAuditoria(f.id,f.nome,foto);
+            });
+          }
+        });
+      }
       if(modoExcecao){
         modoExcecao=false;
         const btn=document.getElementById('btn-excecao');
@@ -687,44 +686,42 @@ async function pararCamFoto(){
 }
 
 async function tirarFoto(){
-  try{
-    // 1. Para câmera traseira (QR) para liberar o hardware
-    if(qrScanner){
-      try{await qrScanner.stop();}catch(e){}
-    }
-    await new Promise(r=>setTimeout(r,300)); // aguarda 300ms para liberar
+  // Tira foto em segundo plano com timeout de 4 segundos
+  // Se demorar ou falhar não trava o app
+  return new Promise(resolve=>{
+    const timeout=setTimeout(()=>{
+      pararCamFoto();
+      resolve(null);
+    },4000);
 
-    // 2. Inicia câmera frontal
-    camFotoStream=await navigator.mediaDevices.getUserMedia({
-      video:{facingMode:'user',width:320,height:240},audio:false
+    navigator.mediaDevices.getUserMedia({
+      video:{facingMode:'user',width:240,height:180},audio:false
+    }).then(stream=>{
+      camFotoStream=stream;
+      const video=document.getElementById('cam-foto');
+      video.srcObject=stream;
+      video.onloadedmetadata=()=>{
+        setTimeout(()=>{
+          try{
+            const canvas=document.getElementById('canvas-foto');
+            canvas.width=240; canvas.height=180;
+            canvas.getContext('2d').drawImage(video,0,0,240,180);
+            const foto=canvas.toDataURL('image/jpeg',0.3);
+            clearTimeout(timeout);
+            pararCamFoto();
+            resolve(foto);
+          }catch(e){
+            clearTimeout(timeout);
+            pararCamFoto();
+            resolve(null);
+          }
+        },800);
+      };
+    }).catch(e=>{
+      clearTimeout(timeout);
+      resolve(null);
     });
-    const video=document.getElementById('cam-foto');
-    video.srcObject=camFotoStream;
-    await new Promise(r=>{video.onloadedmetadata=r;}); // aguarda vídeo carregar
-    await new Promise(r=>setTimeout(r,600)); // aguarda 600ms para estabilizar imagem
-
-    // 3. Tira a foto
-    const canvas=document.getElementById('canvas-foto');
-    canvas.width=320; canvas.height=240;
-    const ctx=canvas.getContext('2d');
-    ctx.drawImage(video,0,0,320,240);
-    const foto=canvas.toDataURL('image/jpeg',0.4);
-
-    // 4. Para câmera frontal
-    await pararCamFoto();
-    await new Promise(r=>setTimeout(r,300)); // aguarda 300ms para liberar
-
-    // 5. Reinicia câmera traseira (QR)
-    reiniciarScanner();
-
-    return foto;
-  }catch(e){
-    console.log('Erro ao tirar foto:',e);
-    // Garante que câmera frontal seja parada e QR reiniciado em caso de erro
-    await pararCamFoto();
-    reiniciarScanner();
-    return null;
-  }
+  });
 }
 
 function reiniciarScanner(){
