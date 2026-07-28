@@ -222,6 +222,7 @@ td.exc-cell{color:#92400E;font-family:monospace;font-size:.75rem;}
   <button class="tab" onclick="trocarTab('reg',this)">🕐 Registros</button>
   <button class="tab" onclick="trocarTab('func',this)">👥 Funcionários</button>
   <button class="tab" onclick="trocarTab('feriados',this)">📅 Feriados</button>
+  <button class="tab" onclick="trocarTab('audit',this)">📸 Auditoria</button>
   <button class="tab" onclick="trocarTab('config',this)">⚙️ Config</button>
 </div>
 
@@ -301,6 +302,26 @@ td.exc-cell{color:#92400E;font-family:monospace;font-size:.75rem;}
     </div>
     <div class="sw"><span class="si">🔍</span><input type="text" id="bf" placeholder="Buscar…" oninput="renderF()"></div>
     <div class="el" id="fl"><div class="em"><div class="ic">👤</div>Carregando…</div></div>
+  </div>
+</div>
+
+<!-- AUDITORIA FOTOS -->
+<div class="pg" id="pg-audit">
+  <div class="fp">
+    <h3>📸 Fotos de auditoria — primeira entrada do dia</h3>
+    <div class="fg">
+      <div class="ff"><label>Data</label><input type="date" id="audit-data"></div>
+    </div>
+    <div class="fa">
+      <button class="btn br" onclick="buscarFotos()">🔍 Buscar fotos</button>
+    </div>
+  </div>
+  <div class="card">
+    <h2>📸 Fotos do dia</h2>
+    <p style="font-size:.78rem;color:var(--sub);margin-bottom:16px">Fotos tiradas automaticamente na primeira entrada. Armazenadas por 3 meses.</p>
+    <div id="audit-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px">
+      <div class="em"><div class="ic">📸</div>Selecione uma data acima.</div>
+    </div>
   </div>
 </div>
 
@@ -1220,6 +1241,31 @@ window.imprimirQR=function(){
 
 document.getElementById('mo-qr').addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});
 
+
+// ── AUDITORIA DE FOTOS ──
+window.buscarFotos=async function(){
+  const data=document.getElementById('audit-data').value;
+  if(!data){alert('⚠️ Selecione uma data.');return;}
+  const grid=document.getElementById('audit-grid');
+  grid.innerHTML='<div class="lt"><div class="sp2"></div>Buscando…</div>';
+  const snap=await get(ref(db,'fotos_auditoria/'+data));
+  if(!snap.exists()||!snap.val()){
+    grid.innerHTML='<div class="em"><div class="ic">📸</div>Nenhuma foto neste dia.</div>';
+    return;
+  }
+  const fotos=Object.values(snap.val());
+  grid.innerHTML=fotos.map(f=>`
+    <div style="background:var(--cinza);border:1.5px solid var(--borda);border-radius:12px;overflow:hidden;text-align:center">
+      <img src="${f.foto}" style="width:100%;height:140px;object-fit:cover;display:block"
+        onerror="this.style.display='none'">
+      <div style="padding:8px 10px">
+        <div style="font-size:.78rem;font-weight:800;color:var(--texto)">${f.nome.split(' ')[0]}</div>
+        <div style="font-size:.7rem;color:var(--sub)">${f.hora}</div>
+        <div style="font-size:.65rem;color:var(--sub)">🪪 ${f.empId}</div>
+      </div>
+    </div>`).join('');
+};
+
 function toast(msg){
   let t=document.getElementById('toast');
   if(!t){t=document.createElement('div');t.id='toast';Object.assign(t.style,{position:'fixed',bottom:'24px',left:'50%',transform:'translateX(-50%) translateY(80px)',background:'#1F2937',color:'#fff',padding:'12px 24px',borderRadius:'30px',fontFamily:'Montserrat,sans-serif',fontWeight:'700',fontSize:'.88rem',boxShadow:'0 8px 24px #0003',transition:'transform .3s',zIndex:'999',whiteSpace:'nowrap'});document.body.appendChild(t);}
@@ -1229,6 +1275,7 @@ function toast(msg){
 }
 
 setMes();
+document.getElementById('audit-data').value=new Date().toISOString().split('T')[0];
 checarSenhaAdmin();
 </script>
 
