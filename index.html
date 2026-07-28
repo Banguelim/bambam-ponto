@@ -169,6 +169,9 @@ header h1{font-family:'Baloo 2',cursive;font-size:1.4rem;color:#fff;}
     <h2>📷 Escanear Crachá</h2>
     <div id="reader"></div>
   </div>
+  <!-- Câmera frontal oculta para foto de auditoria -->
+  <video id="cam-foto" autoplay playsinline style="display:none;width:1px;height:1px"></video>
+  <canvas id="canvas-foto" style="display:none"></canvas>
   <div class="excecao-wrap">
     <button id="btn-excecao" onclick="toggleExcecao()">⚠️ Exceção</button>
   </div>
@@ -289,6 +292,7 @@ function iniciarApp(){
   document.getElementById('wifi-badge').textContent='✅ Online';
   atualizarBadgeOffline();
   sincronizarPendentes();
+  limparFotosAntigas();
 
   onValue(ref(db,'funcionarios'),snap=>{
     funcionarios={};
@@ -325,15 +329,12 @@ function renderLog(){
 let scannerAtivo=false;
 function iniciarScanner(){
   if(scannerAtivo)return; scannerAtivo=true;
-  const qr=new Html5Qrcode("reader");
-  qr.start({facingMode:"environment"},{fps:10,qrbox:{width:210,height:210}},
+  qrScanner=new Html5Qrcode("reader");
+  qrScanner.start({facingMode:"environment"},{fps:10,qrbox:{width:210,height:210}},
     txt=>{
       if(bloqueadoScanner) return;
-      // Bloqueia scanner por 1 segundo para evitar leitura dupla do mesmo QR
       bloqueadoScanner=true;
       setTimeout(()=>{bloqueadoScanner=false;},1000);
-
-      // Verifica bloqueio por funcionário (5 minutos)
       const agora=Date.now();
       if(bloqueadoPorFunc[txt]&&agora<bloqueadoPorFunc[txt]){
         const restaSeg=Math.ceil((bloqueadoPorFunc[txt]-agora)/1000);
@@ -530,9 +531,20 @@ window.confirmarPonto=async function(){
   const f=funcSel,agora=new Date();
   const reg={empId:f.id,nome:f.nome,cargo:f.cargo||'Colaborador',tipo:tipoEsc,data:dh(),hora:agora.toLocaleTimeString('pt-BR'),timestamp:agora.toISOString(),excecao:modoExcecao};
 
+  // Tira foto só na primeira ENTRADA do dia
+  let fotoBase64=null;
+  if(tipoEsc==='entrada'){
+    const deveFoto=await deveTomarFoto(f.id);
+    if(deveFoto){
+      fotoBase64=await tirarFoto();
+    }
+  }
+
   if(navigator.onLine){
     try{
       await push(ref(db,'registros/'+dh()),reg);
+      // Salva foto de auditoria se for primeira entrada
+      if(fotoBase64) await salvarFotoAuditoria(f.id,f.nome,fotoBase64);
       if(navigator.vibrate)navigator.vibrate([80,40,80]);
       if(modoExcecao){
         modoExcecao=false;
@@ -660,6 +672,124 @@ window.addEventListener('offline',()=>{
 setInterval(()=>{
   if(navigator.onLine) sincronizarPendentes();
 },30000);
+
+
+// ── FOTO DE AUDITORIA ──
+let camFotoStream=null;
+let qrScanner=null; // referência ao scanner QR para pausar/retomar
+
+async function pararCamFoto(){
+  if(camFotoStream){
+    camFotoStream.getTracks().forEach(t=>t.stop());
+    camFotoStream=null;
+    document.getElementById('cam-foto').srcObject=null;
+  }
+}
+
+async function tirarFoto(){
+  try{
+    // 1. Para câmera traseira (QR) para liberar o hardware
+    if(qrScanner){
+      try{await qrScanner.stop();}catch(e){}
+    }
+    await new Promise(r=>setTimeout(r,300)); // aguarda 300ms para liberar
+
+    // 2. Inicia câmera frontal
+    camFotoStream=await navigator.mediaDevices.getUserMedia({
+      video:{facingMode:'user',width:320,height:240},audio:false
+    });
+    const video=document.getElementById('cam-foto');
+    video.srcObject=camFotoStream;
+    await new Promise(r=>{video.onloadedmetadata=r;}); // aguarda vídeo carregar
+    await new Promise(r=>setTimeout(r,600)); // aguarda 600ms para estabilizar imagem
+
+    // 3. Tira a foto
+    const canvas=document.getElementById('canvas-foto');
+    canvas.width=320; canvas.height=240;
+    const ctx=canvas.getContext('2d');
+    ctx.drawImage(video,0,0,320,240);
+    const foto=canvas.toDataURL('image/jpeg',0.4);
+
+    // 4. Para câmera frontal
+    await pararCamFoto();
+    await new Promise(r=>setTimeout(r,300)); // aguarda 300ms para liberar
+
+    // 5. Reinicia câmera traseira (QR)
+    reiniciarScanner();
+
+    return foto;
+  }catch(e){
+    console.log('Erro ao tirar foto:',e);
+    // Garante que câmera frontal seja parada e QR reiniciado em caso de erro
+    await pararCamFoto();
+    reiniciarScanner();
+    return null;
+  }
+}
+
+function reiniciarScanner(){
+  // Reinicia o scanner QR após usar câmera frontal
+  try{
+    if(qrScanner){
+      qrScanner.start(
+        {facingMode:'environment'},
+        {fps:10,qrbox:{width:210,height:210}},
+        txt=>{
+          if(bloqueadoScanner) return;
+          bloqueadoScanner=true;
+          setTimeout(()=>{bloqueadoScanner=false;},1000);
+          const agora=Date.now();
+          if(bloqueadoPorFunc[txt]&&agora<bloqueadoPorFunc[txt]){
+            const restaSeg=Math.ceil((bloqueadoPorFunc[txt]-agora)/1000);
+            const min=Math.floor(restaSeg/60),seg=restaSeg%60;
+            mostrarToast(`⏱️ Aguarde ${min}:${String(seg).padStart(2,'0')} para registrar novamente.`,'#E5C07B');
+            return;
+          }
+          abrirModal(txt);
+        },
+        ()=>{}
+      ).catch(()=>{});
+    }
+  }catch(e){console.log('Erro ao reiniciar scanner:',e);}
+}
+
+// Verifica se já tirou foto hoje (só na primeira entrada do dia)
+async function deveTomarFoto(empId){
+  const snap=await get(ref(db,'fotos_auditoria/'+dh()+'/'+empId));
+  return !snap.exists();
+}
+
+// Salva foto no Firebase
+async function salvarFotoAuditoria(empId,nome,fotoBase64){
+  if(!fotoBase64) return;
+  await set(ref(db,'fotos_auditoria/'+dh()+'/'+empId),{
+    empId, nome,
+    foto: fotoBase64,
+    hora: new Date().toLocaleTimeString('pt-BR'),
+    timestamp: new Date().toISOString()
+  });
+}
+
+// Limpa fotos com mais de 3 meses automaticamente
+async function limparFotosAntigas(){
+  try{
+    const snap=await get(ref(db,'fotos_auditoria'));
+    if(!snap.exists()) return;
+    const tresMesesAtras=new Date();
+    tresMesesAtras.setMonth(tresMesesAtras.getMonth()-3);
+    const limite=tresMesesAtras.toISOString().split('T')[0];
+    const promessas=[];
+    snap.forEach(dia=>{
+      if(dia.key<limite){
+        promessas.push(remove(ref(db,'fotos_auditoria/'+dia.key)));
+      }
+    });
+    if(promessas.length){
+      await Promise.all(promessas);
+      console.log(`🗑️ ${promessas.length} dia(s) de fotos antigas removidos.`);
+    }
+  }catch(e){console.log('Erro ao limpar fotos:',e);}
+}
 
 function mostrarToast(msg,cor){
   let t=document.getElementById('toast');
