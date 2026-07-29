@@ -198,6 +198,13 @@ header h1{font-family:'Baloo 2',cursive;font-size:1.4rem;color:#fff;}
 <div class="modal-overlay" id="modal">
   <div class="modal">
     <div id="step1">
+      <!-- Preview câmera frontal -->
+      <div id="cam-preview-box" style="display:none;margin-bottom:12px;position:relative">
+        <video id="cam-preview" autoplay playsinline muted
+          style="width:100%;max-height:160px;border-radius:12px;object-fit:cover;background:#000;transform:scaleX(-1)"></video>
+        <div id="cam-countdown" style="position:absolute;bottom:8px;right:8px;background:#0008;color:#fff;border-radius:20px;padding:3px 10px;font-size:.78rem;font-weight:800"></div>
+        <div style="position:absolute;top:8px;left:8px;background:#0008;color:#98C379;border-radius:20px;padding:3px 10px;font-size:.72rem;font-weight:700">📸 Capturando foto…</div>
+      </div>
       <div class="emp-avatar" id="av1"></div>
       <div class="emp-nome" id="nm1">—</div>
       <div class="emp-cargo" id="cg1">—</div>
@@ -429,6 +436,8 @@ window.abrirModal=async function(empId){
   document.getElementById('step1').style.display='block';
   document.getElementById('step2').style.display='none';
   document.getElementById('modal').classList.add('open');
+  // Inicia câmera frontal para capturar foto
+  iniciarCamFrontalModal();
 
   // Jornada do dia
   const jornada=getJornadaDia(f,hoje);
@@ -531,19 +540,20 @@ window.confirmarPonto=async function(){
   const f=funcSel,agora=new Date();
   const reg={empId:f.id,nome:f.nome,cargo:f.cargo||'Colaborador',tipo:tipoEsc,data:dh(),hora:agora.toLocaleTimeString('pt-BR'),timestamp:agora.toISOString(),excecao:modoExcecao};
 
+  // Pega a foto já capturada pela câmera frontal no modal
+  const fotoParaSalvar=fotoCapturada;
+
+  // Para câmera frontal antes de salvar
+  await pararCamFrontal();
+
   if(navigator.onLine){
     try{
       await push(ref(db,'registros/'+dh()),reg);
       if(navigator.vibrate)navigator.vibrate([80,40,80]);
-      // Tira foto em segundo plano APÓS confirmar — não bloqueia o app
-      if(tipoEsc==='entrada'){
-        deveTomarFoto(f.id).then(deve=>{
-          if(deve){
-            tirarFoto().then(foto=>{
-              if(foto) salvarFotoAuditoria(f.id,f.nome,foto);
-            });
-          }
-        });
+      // Salva foto capturada durante o modal (todos os registros)
+      if(fotoParaSalvar){
+        salvarFotoAuditoria(f.id,f.nome,fotoParaSalvar,tipoEsc)
+          .catch(e=>console.log('Erro ao salvar foto:',e));
       }
       if(modoExcecao){
         modoExcecao=false;
@@ -573,7 +583,13 @@ window.confirmarPonto=async function(){
   fecharModal();
 };
 
-window.fecharModal=function(){document.getElementById('modal').classList.remove('open');funcSel=null;tipoEsc=null;};
+window.fecharModal=function(){
+  document.getElementById('modal').classList.remove('open');
+  funcSel=null;tipoEsc=null;
+  pararCamFrontal();
+  // Reinicia câmera traseira
+  setTimeout(()=>reiniciarScanner(),300);
+};
 
 function mostrarConfirmacao(nome, tipo, hora){
   const box=document.getElementById('conf-box');
@@ -686,38 +702,56 @@ async function pararCamFoto(){
 }
 
 async function tirarFoto(){
-  // Tira foto em segundo plano com timeout de 4 segundos
-  // Se demorar ou falhar não trava o app
   return new Promise(resolve=>{
+    // Timeout de 6 segundos — se não conseguir desiste
     const timeout=setTimeout(()=>{
+      console.log('📸 Timeout ao tirar foto');
       pararCamFoto();
       resolve(null);
-    },4000);
+    },6000);
+
+    // Verifica se getUserMedia está disponível
+    if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+      clearTimeout(timeout);
+      resolve(null);
+      return;
+    }
 
     navigator.mediaDevices.getUserMedia({
-      video:{facingMode:'user',width:240,height:180},audio:false
+      video:{facingMode:'user'},audio:false
     }).then(stream=>{
       camFotoStream=stream;
       const video=document.getElementById('cam-foto');
       video.srcObject=stream;
-      video.onloadedmetadata=()=>{
-        setTimeout(()=>{
-          try{
-            const canvas=document.getElementById('canvas-foto');
-            canvas.width=240; canvas.height=180;
-            canvas.getContext('2d').drawImage(video,0,0,240,180);
-            const foto=canvas.toDataURL('image/jpeg',0.3);
-            clearTimeout(timeout);
-            pararCamFoto();
-            resolve(foto);
-          }catch(e){
-            clearTimeout(timeout);
-            pararCamFoto();
-            resolve(null);
-          }
-        },800);
-      };
+
+      video.addEventListener('loadedmetadata',()=>{
+        video.play().then(()=>{
+          // Aguarda 1s para câmera estabilizar
+          setTimeout(()=>{
+            try{
+              const canvas=document.getElementById('canvas-foto');
+              canvas.width=240; canvas.height=180;
+              canvas.getContext('2d').drawImage(video,0,0,240,180);
+              const foto=canvas.toDataURL('image/jpeg',0.35);
+              clearTimeout(timeout);
+              pararCamFoto();
+              resolve(foto&&foto.length>5000?foto:null);
+            }catch(e){
+              console.log('Erro canvas:',e);
+              clearTimeout(timeout);
+              pararCamFoto();
+              resolve(null);
+            }
+          },1000);
+        }).catch(e=>{
+          clearTimeout(timeout);
+          pararCamFoto();
+          resolve(null);
+        });
+      },{once:true});
+
     }).catch(e=>{
+      console.log('Câmera frontal não disponível:',e);
       clearTimeout(timeout);
       resolve(null);
     });
@@ -725,42 +759,39 @@ async function tirarFoto(){
 }
 
 function reiniciarScanner(){
-  // Reinicia o scanner QR após usar câmera frontal
+  if(!qrScanner) return;
   try{
-    if(qrScanner){
-      qrScanner.start(
-        {facingMode:'environment'},
-        {fps:10,qrbox:{width:210,height:210}},
-        txt=>{
-          if(bloqueadoScanner) return;
-          bloqueadoScanner=true;
-          setTimeout(()=>{bloqueadoScanner=false;},1000);
-          const agora=Date.now();
-          if(bloqueadoPorFunc[txt]&&agora<bloqueadoPorFunc[txt]){
-            const restaSeg=Math.ceil((bloqueadoPorFunc[txt]-agora)/1000);
-            const min=Math.floor(restaSeg/60),seg=restaSeg%60;
-            mostrarToast(`⏱️ Aguarde ${min}:${String(seg).padStart(2,'0')} para registrar novamente.`,'#E5C07B');
-            return;
-          }
-          abrirModal(txt);
-        },
-        ()=>{}
-      ).catch(()=>{});
-    }
+    qrScanner.start(
+      {facingMode:'environment'},
+      {fps:10,qrbox:{width:210,height:210}},
+      txt=>{
+        if(bloqueadoScanner) return;
+        bloqueadoScanner=true;
+        setTimeout(()=>{bloqueadoScanner=false;},1000);
+        const agora=Date.now();
+        if(bloqueadoPorFunc[txt]&&agora<bloqueadoPorFunc[txt]){
+          const restaSeg=Math.ceil((bloqueadoPorFunc[txt]-agora)/1000);
+          const min=Math.floor(restaSeg/60),seg=restaSeg%60;
+          mostrarToast(`⏱️ Aguarde ${min}:${String(seg).padStart(2,'0')} para registrar novamente.`,'#E5C07B');
+          return;
+        }
+        abrirModal(txt);
+      },
+      ()=>{}
+    ).catch(()=>{});
   }catch(e){console.log('Erro ao reiniciar scanner:',e);}
 }
 
-// Verifica se já tirou foto hoje (só na primeira entrada do dia)
-async function deveTomarFoto(empId){
-  const snap=await get(ref(db,'fotos_auditoria/'+dh()+'/'+empId));
-  return !snap.exists();
-}
+
 
 // Salva foto no Firebase
-async function salvarFotoAuditoria(empId,nome,fotoBase64){
+async function salvarFotoAuditoria(empId,nome,fotoBase64,tipo){
   if(!fotoBase64) return;
-  await set(ref(db,'fotos_auditoria/'+dh()+'/'+empId),{
+  // Salva com chave única por registro (data+empId+timestamp)
+  const chave=empId+'_'+Date.now();
+  await set(ref(db,'fotos_auditoria/'+dh()+'/'+chave),{
     empId, nome,
+    tipo: tipo||'entrada',
     foto: fotoBase64,
     hora: new Date().toLocaleTimeString('pt-BR'),
     timestamp: new Date().toISOString()
