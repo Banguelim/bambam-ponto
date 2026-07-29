@@ -539,7 +539,11 @@ window.confirmarPonto=async function(){
     try{
       await push(ref(db,'registros/'+dh()),reg);
       if(navigator.vibrate)navigator.vibrate([80,40,80]);
-      // Salva foto já capturada no momento da leitura do QR
+      // Tenta capturar foto neste momento (funcionário ainda confirmando)
+      // Se já tinha foto do momento do QR, usa ela; senão tenta agora
+      if(!fotoCapturadaAtual){
+        capturarFotoDoScanner(f.id,f.nome);
+      }
       salvarFotoConfirmada(f.id,f.nome,tipoEsc);
       if(modoExcecao){
         modoExcecao=false;
@@ -557,7 +561,7 @@ window.confirmarPonto=async function(){
   } else {
     // Sem internet → salva localmente
     salvarOffline(reg);
-  bloqueadoPorFunc[f.id]=Date.now()+(5*60*1000);
+    bloqueadoPorFunc[f.id]=Date.now()+(5*60*1000);
   }
 
   if(modoExcecao){
