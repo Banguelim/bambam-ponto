@@ -1248,9 +1248,10 @@ window.buscarFotos=async function(){
   if(!data){alert('⚠️ Selecione uma data.');return;}
   const grid=document.getElementById('audit-grid');
   grid.innerHTML='<div class="lt"><div class="sp2"></div>Buscando…</div>';
+  try{
   const snap=await get(ref(db,'fotos_auditoria/'+data));
   if(!snap.exists()||!snap.val()){
-    grid.innerHTML='<div class="em"><div class="ic">📸</div>Nenhuma foto neste dia.</div>';
+    grid.innerHTML='<div class="em"><div class="ic">📸</div>Nenhuma foto registrada neste dia.<br><span style="font-size:.75rem;color:var(--sub)">As fotos são tiradas quando o funcionário confirma o ponto.</span></div>';
     return;
   }
   // Ordena por hora
@@ -1270,6 +1271,10 @@ window.buscarFotos=async function(){
         <div style="font-size:.65rem;color:var(--sub)">🪪 ${f.empId}</div>
       </div>
     </div>`).join('');
+  }catch(e){
+    grid.innerHTML='<div class="em"><div class="ic">❌</div>Erro ao carregar fotos. Verifique a conexão.</div>';
+    console.log('Erro auditoria:',e);
+  }
 };
 
 function toast(msg){
