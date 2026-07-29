@@ -561,7 +561,7 @@ window.confirmarPonto=async function(){
   } else {
     // Sem internet → salva localmente
     salvarOffline(reg);
-  bloqueadoPorFunc[f.id]=Date.now()+(5*60*1000);
+    bloqueadoPorFunc[f.id]=Date.now()+(5*60*1000);
   }
 
   if(modoExcecao){
