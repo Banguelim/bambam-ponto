@@ -166,7 +166,7 @@ header h1{font-family:'Baloo 2',cursive;font-size:1.4rem;color:#fff;}
   </div>
 
   <div class="card">
-    <h2>📷 Escanear Crachá</h2>
+    <h2>🤳 Aproxime o crachá e olhe para a câmera</h2>
     <div id="reader"></div>
   </div>
   <!-- Câmera frontal oculta para foto de auditoria -->
@@ -198,13 +198,6 @@ header h1{font-family:'Baloo 2',cursive;font-size:1.4rem;color:#fff;}
 <div class="modal-overlay" id="modal">
   <div class="modal">
     <div id="step1">
-      <!-- Preview câmera frontal -->
-      <div id="cam-preview-box" style="display:none;margin-bottom:12px;position:relative">
-        <video id="cam-preview" autoplay playsinline muted
-          style="width:100%;max-height:160px;border-radius:12px;object-fit:cover;background:#000;transform:scaleX(-1)"></video>
-        <div id="cam-countdown" style="position:absolute;bottom:8px;right:8px;background:#0008;color:#fff;border-radius:20px;padding:3px 10px;font-size:.78rem;font-weight:800"></div>
-        <div style="position:absolute;top:8px;left:8px;background:#0008;color:#98C379;border-radius:20px;padding:3px 10px;font-size:.72rem;font-weight:700">📸 Capturando foto…</div>
-      </div>
       <div class="emp-avatar" id="av1"></div>
       <div class="emp-nome" id="nm1">—</div>
       <div class="emp-cargo" id="cg1">—</div>
@@ -297,6 +290,8 @@ function iniciarApp(){
   }
   tick(); setInterval(tick,1000);
   document.getElementById('wifi-badge').textContent='✅ Online';
+  // Instrução na tela do leitor
+  document.getElementById('reader').style.transform='scaleX(-1)';
   atualizarBadgeOffline();
   sincronizarPendentes();
   limparFotosAntigas();
@@ -337,7 +332,7 @@ let scannerAtivo=false;
 function iniciarScanner(){
   if(scannerAtivo)return; scannerAtivo=true;
   qrScanner=new Html5Qrcode("reader");
-  qrScanner.start({facingMode:"environment"},{fps:10,qrbox:{width:210,height:210}},
+  qrScanner.start({facingMode:"user"},{fps:10,qrbox:{width:210,height:210}},
     txt=>{
       if(bloqueadoScanner) return;
       bloqueadoScanner=true;
@@ -422,6 +417,8 @@ async function buscarUltimo(empId){
 window.abrirModal=async function(empId){
   const f=funcionarios[empId];
   if(!f){mostrarToast('❌ Crachá não reconhecido.','#ff4d6d');return;}
+  // Captura foto do vídeo frontal no momento da leitura
+  capturarFotoDoScanner(f.id, f.nome);
 
   const hoje=dh();
   const [regsHoje, ultimo] = await Promise.all([
@@ -436,8 +433,6 @@ window.abrirModal=async function(empId){
   document.getElementById('step1').style.display='block';
   document.getElementById('step2').style.display='none';
   document.getElementById('modal').classList.add('open');
-  // Inicia câmera frontal para capturar foto
-  iniciarCamFrontalModal();
 
   // Jornada do dia
   const jornada=getJornadaDia(f,hoje);
@@ -540,21 +535,12 @@ window.confirmarPonto=async function(){
   const f=funcSel,agora=new Date();
   const reg={empId:f.id,nome:f.nome,cargo:f.cargo||'Colaborador',tipo:tipoEsc,data:dh(),hora:agora.toLocaleTimeString('pt-BR'),timestamp:agora.toISOString(),excecao:modoExcecao};
 
-  // Pega a foto já capturada pela câmera frontal no modal
-  const fotoParaSalvar=fotoCapturada;
-
-  // Para câmera frontal antes de salvar
-  await pararCamFrontal();
-
   if(navigator.onLine){
     try{
       await push(ref(db,'registros/'+dh()),reg);
       if(navigator.vibrate)navigator.vibrate([80,40,80]);
-      // Salva foto capturada durante o modal (todos os registros)
-      if(fotoParaSalvar){
-        salvarFotoAuditoria(f.id,f.nome,fotoParaSalvar,tipoEsc)
-          .catch(e=>console.log('Erro ao salvar foto:',e));
-      }
+      // Salva foto já capturada no momento da leitura do QR
+      salvarFotoConfirmada(f.id,f.nome,tipoEsc);
       if(modoExcecao){
         modoExcecao=false;
         const btn=document.getElementById('btn-excecao');
@@ -586,9 +572,6 @@ window.confirmarPonto=async function(){
 window.fecharModal=function(){
   document.getElementById('modal').classList.remove('open');
   funcSel=null;tipoEsc=null;
-  pararCamFrontal();
-  // Reinicia câmera traseira
-  setTimeout(()=>reiniciarScanner(),300);
 };
 
 function mostrarConfirmacao(nome, tipo, hora){
@@ -762,7 +745,7 @@ function reiniciarScanner(){
   if(!qrScanner) return;
   try{
     qrScanner.start(
-      {facingMode:'environment'},
+      {facingMode:'user'},
       {fps:10,qrbox:{width:210,height:210}},
       txt=>{
         if(bloqueadoScanner) return;
@@ -817,6 +800,39 @@ async function limparFotosAntigas(){
       console.log(`🗑️ ${promessas.length} dia(s) de fotos antigas removidos.`);
     }
   }catch(e){console.log('Erro ao limpar fotos:',e);}
+}
+
+
+// ── FOTO DE AUDITORIA ──
+// Captura direto do vídeo do scanner frontal — sem trocar câmera!
+let fotoCapturadaAtual=null;
+
+function capturarFotoDoScanner(empId,nome){
+  fotoCapturadaAtual=null;
+  try{
+    const video=document.querySelector('#reader video');
+    if(!video||!video.videoWidth) return;
+    const canvas=document.getElementById('canvas-foto');
+    canvas.width=320; canvas.height=240;
+    const ctx=canvas.getContext('2d');
+    ctx.save();
+    ctx.translate(320,0);
+    ctx.scale(-1,1);
+    ctx.drawImage(video,0,0,320,240);
+    ctx.restore();
+    const foto=canvas.toDataURL('image/jpeg',0.4);
+    if(foto&&foto.length>5000) fotoCapturadaAtual=foto;
+  }catch(e){
+    console.log('Erro ao capturar foto:',e);
+  }
+}
+
+function salvarFotoConfirmada(empId,nome,tipo){
+  if(fotoCapturadaAtual){
+    salvarFotoAuditoria(empId,nome,fotoCapturadaAtual,tipo)
+      .catch(e=>console.log('Erro ao salvar foto:',e));
+    fotoCapturadaAtual=null;
+  }
 }
 
 function mostrarToast(msg,cor){
