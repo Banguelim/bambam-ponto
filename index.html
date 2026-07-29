@@ -539,7 +539,11 @@ window.confirmarPonto=async function(){
     try{
       await push(ref(db,'registros/'+dh()),reg);
       if(navigator.vibrate)navigator.vibrate([80,40,80]);
-      // Salva foto já capturada no momento da leitura do QR
+      // Tenta capturar foto neste momento (funcionário ainda confirmando)
+      // Se já tinha foto do momento do QR, usa ela; senão tenta agora
+      if(!fotoCapturadaAtual){
+        capturarFotoDoScanner(f.id,f.nome);
+      }
       salvarFotoConfirmada(f.id,f.nome,tipoEsc);
       if(modoExcecao){
         modoExcecao=false;
@@ -768,7 +772,7 @@ function reiniciarScanner(){
 
 
 // Salva foto no Firebase
-async function salvarFotoAuditoria(empId,nome,fotoBase64,tipo){
+async async function salvarFotoAuditoria(empId,nome,fotoBase64,tipo){
   if(!fotoBase64) return;
   // Salva com chave única por registro (data+empId+timestamp)
   const chave=empId+'_'+Date.now();
