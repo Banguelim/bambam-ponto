@@ -772,7 +772,7 @@ function reiniciarScanner(){
 
 
 // Salva foto no Firebase
-async async function salvarFotoAuditoria(empId,nome,fotoBase64,tipo){
+async function salvarFotoAuditoria(empId,nome,fotoBase64,tipo){
   if(!fotoBase64) return;
   // Salva com chave única por registro (data+empId+timestamp)
   const chave=empId+'_'+Date.now();
