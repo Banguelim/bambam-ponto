@@ -284,10 +284,9 @@ function iniciarApp(){
   }
   tick(); setInterval(tick,1000);
   document.getElementById('wifi-badge').textContent='✅ Online';
-  // Instrução na tela do leitor
-  document.getElementById('reader').style.transform='scaleX(-1)';
   atualizarBadgeOffline();
   sincronizarPendentes();
+  limparFotosAntigas();
 
   onValue(ref(db,'funcionarios'),snap=>{
     funcionarios={};
