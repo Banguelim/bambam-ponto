@@ -169,6 +169,8 @@ header h1{font-family:'Baloo 2',cursive;font-size:1.4rem;color:#fff;}
     <h2>🤳 Aproxime o crachá e olhe para a câmera</h2>
     <div id="reader"></div>
   </div>
+  <!-- Câmera frontal oculta para foto de auditoria -->
+  <video id="cam-foto" autoplay playsinline style="display:none;width:1px;height:1px"></video>
   <canvas id="canvas-foto" style="display:none"></canvas>
   <div class="excecao-wrap">
     <button id="btn-excecao" onclick="toggleExcecao()">⚠️ Exceção</button>
@@ -210,7 +212,14 @@ header h1{font-family:'Baloo 2',cursive;font-size:1.4rem;color:#fff;}
       </div>
       <button class="btn btn-cancelar" onclick="fecharModal()">Cancelar</button>
     </div>
-
+    <div id="step2" style="display:none">
+      <div class="emp-avatar" id="av2"></div>
+      <div class="emp-nome" id="nm2">—</div>
+      <div class="emp-cargo" id="cg2">—</div>
+      <div class="confirma-box" id="confirma-box"></div>
+      <button class="btn" id="btn-confirmar" onclick="confirmarPonto()">Confirmar</button>
+      <button class="btn btn-voltar" onclick="voltarStep1()">← Voltar</button>
+    </div>
   </div>
 </div>
 
@@ -225,11 +234,8 @@ const db=getDatabase(app);
 const DIAS_KEY=['dom','seg','ter','qua','qui','sex','sab'];
 
 let funcionarios={},logHoje=[],funcSel=null,tipoEsc=null;
-let bloqueadoScanner=false;
-let bloqueadoPorFunc={};
-let qrScanner=null;
-let ultimoFrame=null; // último frame da câmera antes do QR ser lido
-let frameTimer=null;
+let bloqueadoScanner=false; // bloqueia leitura dupla rápida do mesmo QR (1 segundo)
+let bloqueadoPorFunc={}; // bloqueia por funcionário por 5 minutos
 let modoExcecao=false;
 
 const dh=()=>new Date().toISOString().split('T')[0];
@@ -284,6 +290,8 @@ function iniciarApp(){
   }
   tick(); setInterval(tick,1000);
   document.getElementById('wifi-badge').textContent='✅ Online';
+  // Instrução na tela do leitor
+  document.getElementById('reader').style.transform='scaleX(-1)';
   atualizarBadgeOffline();
   sincronizarPendentes();
   limparFotosAntigas();
@@ -321,23 +329,6 @@ function renderLog(){
 }
 
 let scannerAtivo=false;
-function capturarFrameContínuo(){
-  // Captura um frame do vídeo a cada 800ms e guarda em memória
-  frameTimer=setInterval(()=>{
-    try{
-      const video=document.querySelector('#reader video');
-      if(!video||!video.videoWidth||video.videoWidth===0) return;
-      const canvas=document.getElementById('canvas-foto');
-      if(!canvas) return;
-      canvas.width=video.videoWidth;
-      canvas.height=video.videoHeight;
-      canvas.getContext('2d').drawImage(video,0,0);
-      const frame=canvas.toDataURL('image/jpeg',0.45);
-      if(frame&&frame.length>5000) ultimoFrame=frame;
-    }catch(e){}
-  },800);
-}
-
 function iniciarScanner(){
   if(scannerAtivo)return; scannerAtivo=true;
   qrScanner=new Html5Qrcode("reader");
@@ -356,10 +347,7 @@ function iniciarScanner(){
       abrirModal(txt);
     },
     ()=>{}
-  ).then(()=>{
-    // Começa a capturar frames continuamente após câmera iniciar
-    setTimeout(capturarFrameContínuo, 1000);
-  }).catch(()=>{
+  ).catch(()=>{
     document.getElementById('reader').innerHTML='<p style="color:var(--sub);padding:20px;text-align:center;font-size:.85rem">📵 Câmera não disponível.<br>Use HTTPS.</p>';
   });
 }
@@ -429,19 +417,8 @@ async function buscarUltimo(empId){
 window.abrirModal=async function(empId){
   const f=funcionarios[empId];
   if(!f){mostrarToast('❌ Crachá não reconhecido.','#ff4d6d');return;}
-  // Captura frame exato no momento da leitura do QR
-  try{
-    const video=document.querySelector('#reader video');
-    if(video&&video.videoWidth>0){
-      const canvas=document.getElementById('canvas-foto');
-      canvas.width=video.videoWidth;
-      canvas.height=video.videoHeight;
-      canvas.getContext('2d').drawImage(video,0,0);
-      const frame=canvas.toDataURL('image/jpeg',0.5);
-      if(frame&&frame.length>5000) ultimoFrame=frame;
-    }
-  }catch(e){}
   // Captura foto do vídeo frontal no momento da leitura
+  capturarFotoDoScanner(f.id, f.nome);
 
   const hoje=dh();
   const [regsHoje, ultimo] = await Promise.all([
@@ -529,95 +506,76 @@ window.abrirModal=async function(empId){
 };
 
 window.escolher=function(tipo){
-  if(!funcSel)return;
   tipoEsc=tipo;
-  const f=funcSel;
-  const excLabel=modoExcecao?' ⚠️EXCEÇÃO':'';
-  const hora=new Date().toLocaleTimeString('pt-BR');
-
-  // Mostra step2 com botão confirmar
+  const f=funcSel,agora=new Date().toLocaleTimeString('pt-BR');
   document.getElementById('av2').textContent=ini(f.nome);
   document.getElementById('nm2').textContent=f.nome;
   document.getElementById('cg2').textContent='🪪 '+f.id+' · '+(f.cargo||'Colaborador');
-  const box=document.getElementById('confirma-box');
-  const btnConf=document.getElementById('btn-confirmar');
+  const box=document.getElementById('confirma-box'),btn=document.getElementById('btn-confirmar');
+  const excLabel=modoExcecao?' ⚠️EXCEÇÃO':'';
   if(tipo==='entrada'){
     box.className='confirma-box confirma-entrada';
-    box.innerHTML='✅ ENTRADA'+excLabel+'<br><strong>às '+hora+'</strong>';
-    btnConf.className='btn btn-verde-solid';
-    btnConf.textContent='✅ Confirmar ENTRADA';
+    box.innerHTML=`Registrando:<br><strong>✅ ENTRADA${excLabel} às ${agora}</strong>`;
+    btn.className='btn btn-verde-solid';
+    btn.innerHTML='✅ Confirmar ENTRADA';
   } else {
     box.className='confirma-box confirma-saida';
-    box.innerHTML='🚪 SAÍDA'+excLabel+'<br><strong>às '+hora+'</strong>';
-    btnConf.className='btn btn-rosa-solid';
-    btnConf.textContent='🚪 Confirmar SAÍDA';
+    box.innerHTML=`Registrando:<br><strong>🚪 SAÍDA${excLabel} às ${agora}</strong>`;
+    btn.className='btn btn-rosa-solid';
+    btn.innerHTML='🚪 Confirmar SAÍDA';
   }
-
-  btnConf.disabled=false;
-  btnConf.style.opacity='1';
   document.getElementById('step1').style.display='none';
   document.getElementById('step2').style.display='block';
 };
 
-window.cancelarStep2=function(){
-  tipoEsc=null;
-  document.getElementById('step1').style.display='block';
-  document.getElementById('step2').style.display='none';
-};
-
-
+window.voltarStep1=function(){tipoEsc=null;document.getElementById('step1').style.display='block';document.getElementById('step2').style.display='none';};
 
 window.confirmarPonto=async function(){
   if(!funcSel||!tipoEsc)return;
   const f=funcSel,agora=new Date();
   const reg={empId:f.id,nome:f.nome,cargo:f.cargo||'Colaborador',tipo:tipoEsc,data:dh(),hora:agora.toLocaleTimeString('pt-BR'),timestamp:agora.toISOString(),excecao:modoExcecao};
 
-  const btnConf=document.getElementById('btn-confirmar');
-  if(btnConf) btnConf.disabled=true;
-
-  // Registra ponto
   if(navigator.onLine){
-    try{ await push(ref(db,'registros/'+dh()),reg); }
-    catch(e){ salvarOffline(reg); }
-  } else { salvarOffline(reg); }
-
-  // Salva último frame capturado como foto de auditoria
-  if(ultimoFrame){
-    const chave=f.id+'_'+Date.now();
-    set(ref(db,'fotos_auditoria/'+dh()+'/'+chave),{
-      empId:f.id, nome:f.nome, tipo:tipoEsc,
-      foto:ultimoFrame,
-      hora:agora.toLocaleTimeString('pt-BR'),
-      timestamp:agora.toISOString()
-    }).catch(e=>console.log('Foto:',e));
-    ultimoFrame=null;
+    try{
+      await push(ref(db,'registros/'+dh()),reg);
+      if(navigator.vibrate)navigator.vibrate([80,40,80]);
+      // Tenta capturar foto neste momento (funcionário ainda confirmando)
+      // Se já tinha foto do momento do QR, usa ela; senão tenta agora
+      if(!fotoCapturadaAtual){
+        capturarFotoDoScanner(f.id,f.nome);
+      }
+      salvarFotoConfirmada(f.id,f.nome,tipoEsc);
+      if(modoExcecao){
+        modoExcecao=false;
+        const btn=document.getElementById('btn-excecao');
+        btn.classList.remove('ativo');
+        btn.innerHTML='⚠️ Exceção';
+      }
+      bloqueadoPorFunc[f.id]=Date.now()+(5*60*1000);
+      fecharModal();
+      mostrarConfirmacao(f.nome.split(' ')[0], tipoEsc, agora.toLocaleTimeString('pt-BR'));
+    }catch(e){
+      // Falhou mesmo com internet → salva offline
+      salvarOffline(reg);
+    }
+  } else {
+    // Sem internet → salva localmente
+    salvarOffline(reg);
+    bloqueadoPorFunc[f.id]=Date.now()+(5*60*1000);
   }
-
-  if(navigator.vibrate) navigator.vibrate([80,40,80]);
-  bloqueadoPorFunc[f.id]=Date.now()+(5*60*1000);
 
   if(modoExcecao){
     modoExcecao=false;
-    document.getElementById('btn-excecao').classList.remove('ativo');
-    document.getElementById('btn-excecao').innerHTML='⚠️ Exceção';
+    const btn=document.getElementById('btn-excecao');
+    btn.classList.remove('ativo');
+    btn.innerHTML='⚠️ Exceção';
   }
-
-  // Salva foto capturada
-
-  // Fecha modal e mostra confirmação
-  const nome=f.nome.split(' ')[0], tipo=tipoEsc, hora=agora.toLocaleTimeString('pt-BR');
-  document.getElementById('modal').classList.remove('open');
-  funcSel=null; tipoEsc=null;
-
-  mostrarConfirmacao(nome, tipo, hora);
-  if(btnConf) btnConf.disabled=false;
+  fecharModal();
 };
 
 window.fecharModal=function(){
   document.getElementById('modal').classList.remove('open');
-  funcSel=null; tipoEsc=null;
-  // Só reinicia scanner se não for pelo confirmarPonto
-  // (confirmarPonto reinicia após tirar foto)
+  funcSel=null;tipoEsc=null;
 };
 
 function mostrarConfirmacao(nome, tipo, hora){
@@ -718,243 +676,74 @@ setInterval(()=>{
 },30000);
 
 
+// ── FOTO DE AUDITORIA ──
+let camFotoStream=null;
+let qrScanner=null; // referência ao scanner QR para pausar/retomar
 
-// ── MODO OFFLINE ──
-const OFFLINE_KEY='bambam_offline_regs';
-
-function salvarOffline(reg){
-  const pendentes=getPendentes();
-  pendentes.push({...reg,_offlineId:Date.now()});
-  localStorage.setItem(OFFLINE_KEY,JSON.stringify(pendentes));
-  if(navigator.vibrate)navigator.vibrate([80,40,80]);
-  atualizarBadgeOffline();
-  mostrarConfirmacao(reg.nome.split(' ')[0], reg.tipo, reg.hora);
-  mostrarToast('📴 Sem internet — salvo localmente!','#E5C07B');
-  // Adiciona ao log local também
-  logHoje.push(reg);
-  renderLog();
-}
-
-function getPendentes(){
-  try{return JSON.parse(localStorage.getItem(OFFLINE_KEY)||'[]');}catch{return [];}
-}
-
-function atualizarBadgeOffline(){
-  const n=getPendentes().length;
-  document.getElementById('offline-bar').classList.toggle('show',!navigator.onLine||n>0);
-  if(n>0){
-    document.getElementById('offline-bar').textContent=
-      navigator.onLine
-        ? `🔄 Sincronizando ${n} registro(s) pendente(s)…`
-        : `⚠️ SEM INTERNET — ${n} registro(s) salvos localmente. Sincronizará ao conectar.`;
-  } else if(!navigator.onLine){
-    document.getElementById('offline-bar').textContent='⚠️ SEM INTERNET — Registros sendo salvos localmente.';
-  } else {
-    document.getElementById('offline-bar').classList.remove('show');
+async function pararCamFoto(){
+  if(camFotoStream){
+    camFotoStream.getTracks().forEach(t=>t.stop());
+    camFotoStream=null;
+    document.getElementById('cam-foto').srcObject=null;
   }
 }
 
-async function sincronizarPendentes(){
-  if(!navigator.onLine) return;
-  const pendentes=getPendentes();
-  if(!pendentes.length) return;
+async function tirarFoto(){
+  return new Promise(resolve=>{
+    // Timeout de 6 segundos — se não conseguir desiste
+    const timeout=setTimeout(()=>{
+      console.log('📸 Timeout ao tirar foto');
+      pararCamFoto();
+      resolve(null);
+    },6000);
 
-  let sincronizados=0;
-  const falhos=[];
-
-  for(const reg of pendentes){
-    try{
-      const {_offlineId,...regLimpo}=reg;
-      await push(ref(db,'registros/'+reg.data),regLimpo);
-      sincronizados++;
-    }catch(e){
-      falhos.push(reg);
+    // Verifica se getUserMedia está disponível
+    if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+      clearTimeout(timeout);
+      resolve(null);
+      return;
     }
-  }
 
-  localStorage.setItem(OFFLINE_KEY,JSON.stringify(falhos));
+    navigator.mediaDevices.getUserMedia({
+      video:{facingMode:'user'},audio:false
+    }).then(stream=>{
+      camFotoStream=stream;
+      const video=document.getElementById('cam-foto');
+      video.srcObject=stream;
 
-  if(sincronizados>0){
-    const toast=document.getElementById('sync-toast');
-    toast.textContent=`✅ ${sincronizados} registro(s) sincronizado(s)!`;
-    toast.classList.add('show');
-    setTimeout(()=>toast.classList.remove('show'),4000);
-  }
-  atualizarBadgeOffline();
+      video.addEventListener('loadedmetadata',()=>{
+        video.play().then(()=>{
+          // Aguarda 1s para câmera estabilizar
+          setTimeout(()=>{
+            try{
+              const canvas=document.getElementById('canvas-foto');
+              canvas.width=240; canvas.height=180;
+              canvas.getContext('2d').drawImage(video,0,0,240,180);
+              const foto=canvas.toDataURL('image/jpeg',0.35);
+              clearTimeout(timeout);
+              pararCamFoto();
+              resolve(foto&&foto.length>5000?foto:null);
+            }catch(e){
+              console.log('Erro canvas:',e);
+              clearTimeout(timeout);
+              pararCamFoto();
+              resolve(null);
+            }
+          },1000);
+        }).catch(e=>{
+          clearTimeout(timeout);
+          pararCamFoto();
+          resolve(null);
+        });
+      },{once:true});
+
+    }).catch(e=>{
+      console.log('Câmera frontal não disponível:',e);
+      clearTimeout(timeout);
+      resolve(null);
+    });
+  });
 }
-
-// Monitora conexão
-window.addEventListener('online',()=>{
-  atualizarBadgeOffline();
-  sincronizarPendentes();
-});
-window.addEventListener('offline',()=>{
-  atualizarBadgeOffline();
-});
-
-// Tenta sincronizar a cada 30 segundos
-setInterval(()=>{
-  if(navigator.onLine) sincronizarPendentes();
-},30000);
-
-// ── MODO OFFLINE ──
-const OFFLINE_KEY='bambam_offline_regs';
-
-function salvarOffline(reg){
-  const pendentes=getPendentes();
-  pendentes.push({...reg,_offlineId:Date.now()});
-  localStorage.setItem(OFFLINE_KEY,JSON.stringify(pendentes));
-  if(navigator.vibrate)navigator.vibrate([80,40,80]);
-  atualizarBadgeOffline();
-  mostrarConfirmacao(reg.nome.split(' ')[0], reg.tipo, reg.hora);
-  mostrarToast('📴 Sem internet — salvo localmente!','#E5C07B');
-  // Adiciona ao log local também
-  logHoje.push(reg);
-  renderLog();
-}
-
-function getPendentes(){
-  try{return JSON.parse(localStorage.getItem(OFFLINE_KEY)||'[]');}catch{return [];}
-}
-
-function atualizarBadgeOffline(){
-  const n=getPendentes().length;
-  document.getElementById('offline-bar').classList.toggle('show',!navigator.onLine||n>0);
-  if(n>0){
-    document.getElementById('offline-bar').textContent=
-      navigator.onLine
-        ? `🔄 Sincronizando ${n} registro(s) pendente(s)…`
-        : `⚠️ SEM INTERNET — ${n} registro(s) salvos localmente. Sincronizará ao conectar.`;
-  } else if(!navigator.onLine){
-    document.getElementById('offline-bar').textContent='⚠️ SEM INTERNET — Registros sendo salvos localmente.';
-  } else {
-    document.getElementById('offline-bar').classList.remove('show');
-  }
-}
-
-async function sincronizarPendentes(){
-  if(!navigator.onLine) return;
-  const pendentes=getPendentes();
-  if(!pendentes.length) return;
-
-  let sincronizados=0;
-  const falhos=[];
-
-  for(const reg of pendentes){
-    try{
-      const {_offlineId,...regLimpo}=reg;
-      await push(ref(db,'registros/'+reg.data),regLimpo);
-      sincronizados++;
-    }catch(e){
-      falhos.push(reg);
-    }
-  }
-
-  localStorage.setItem(OFFLINE_KEY,JSON.stringify(falhos));
-
-  if(sincronizados>0){
-    const toast=document.getElementById('sync-toast');
-    toast.textContent=`✅ ${sincronizados} registro(s) sincronizado(s)!`;
-    toast.classList.add('show');
-    setTimeout(()=>toast.classList.remove('show'),4000);
-  }
-  atualizarBadgeOffline();
-}
-
-// Monitora conexão
-window.addEventListener('online',()=>{
-  atualizarBadgeOffline();
-  sincronizarPendentes();
-});
-window.addEventListener('offline',()=>{
-  atualizarBadgeOffline();
-});
-
-// Tenta sincronizar a cada 30 segundos
-setInterval(()=>{
-  if(navigator.onLine) sincronizarPendentes();
-},30000);
-
-
-
-// ── MODO OFFLINE ──
-const OFFLINE_KEY='bambam_offline_regs';
-
-function salvarOffline(reg){
-  const pendentes=getPendentes();
-  pendentes.push({...reg,_offlineId:Date.now()});
-  localStorage.setItem(OFFLINE_KEY,JSON.stringify(pendentes));
-  if(navigator.vibrate)navigator.vibrate([80,40,80]);
-  atualizarBadgeOffline();
-  mostrarConfirmacao(reg.nome.split(' ')[0], reg.tipo, reg.hora);
-  mostrarToast('📴 Sem internet — salvo localmente!','#E5C07B');
-  // Adiciona ao log local também
-  logHoje.push(reg);
-  renderLog();
-}
-
-function getPendentes(){
-  try{return JSON.parse(localStorage.getItem(OFFLINE_KEY)||'[]');}catch{return [];}
-}
-
-function atualizarBadgeOffline(){
-  const n=getPendentes().length;
-  document.getElementById('offline-bar').classList.toggle('show',!navigator.onLine||n>0);
-  if(n>0){
-    document.getElementById('offline-bar').textContent=
-      navigator.onLine
-        ? `🔄 Sincronizando ${n} registro(s) pendente(s)…`
-        : `⚠️ SEM INTERNET — ${n} registro(s) salvos localmente. Sincronizará ao conectar.`;
-  } else if(!navigator.onLine){
-    document.getElementById('offline-bar').textContent='⚠️ SEM INTERNET — Registros sendo salvos localmente.';
-  } else {
-    document.getElementById('offline-bar').classList.remove('show');
-  }
-}
-
-async function sincronizarPendentes(){
-  if(!navigator.onLine) return;
-  const pendentes=getPendentes();
-  if(!pendentes.length) return;
-
-  let sincronizados=0;
-  const falhos=[];
-
-  for(const reg of pendentes){
-    try{
-      const {_offlineId,...regLimpo}=reg;
-      await push(ref(db,'registros/'+reg.data),regLimpo);
-      sincronizados++;
-    }catch(e){
-      falhos.push(reg);
-    }
-  }
-
-  localStorage.setItem(OFFLINE_KEY,JSON.stringify(falhos));
-
-  if(sincronizados>0){
-    const toast=document.getElementById('sync-toast');
-    toast.textContent=`✅ ${sincronizados} registro(s) sincronizado(s)!`;
-    toast.classList.add('show');
-    setTimeout(()=>toast.classList.remove('show'),4000);
-  }
-  atualizarBadgeOffline();
-}
-
-// Monitora conexão
-window.addEventListener('online',()=>{
-  atualizarBadgeOffline();
-  sincronizarPendentes();
-});
-window.addEventListener('offline',()=>{
-  atualizarBadgeOffline();
-});
-
-// Tenta sincronizar a cada 30 segundos
-setInterval(()=>{
-  if(navigator.onLine) sincronizarPendentes();
-},30000);
-
 
 function reiniciarScanner(){
   if(!qrScanner) return;
@@ -983,6 +772,72 @@ function reiniciarScanner(){
 
 
 // Salva foto no Firebase
+async function salvarFotoAuditoria(empId,nome,fotoBase64,tipo){
+  if(!fotoBase64) return;
+  // Salva com chave única por registro (data+empId+timestamp)
+  const chave=empId+'_'+Date.now();
+  await set(ref(db,'fotos_auditoria/'+dh()+'/'+chave),{
+    empId, nome,
+    tipo: tipo||'entrada',
+    foto: fotoBase64,
+    hora: new Date().toLocaleTimeString('pt-BR'),
+    timestamp: new Date().toISOString()
+  });
+}
+
+// Limpa fotos com mais de 3 meses automaticamente
+async function limparFotosAntigas(){
+  try{
+    const snap=await get(ref(db,'fotos_auditoria'));
+    if(!snap.exists()) return;
+    const tresMesesAtras=new Date();
+    tresMesesAtras.setMonth(tresMesesAtras.getMonth()-3);
+    const limite=tresMesesAtras.toISOString().split('T')[0];
+    const promessas=[];
+    snap.forEach(dia=>{
+      if(dia.key<limite){
+        promessas.push(remove(ref(db,'fotos_auditoria/'+dia.key)));
+      }
+    });
+    if(promessas.length){
+      await Promise.all(promessas);
+      console.log(`🗑️ ${promessas.length} dia(s) de fotos antigas removidos.`);
+    }
+  }catch(e){console.log('Erro ao limpar fotos:',e);}
+}
+
+
+// ── FOTO DE AUDITORIA ──
+// Captura direto do vídeo do scanner frontal — sem trocar câmera!
+let fotoCapturadaAtual=null;
+
+function capturarFotoDoScanner(empId,nome){
+  fotoCapturadaAtual=null;
+  try{
+    const video=document.querySelector('#reader video');
+    if(!video||!video.videoWidth) return;
+    const canvas=document.getElementById('canvas-foto');
+    canvas.width=320; canvas.height=240;
+    const ctx=canvas.getContext('2d');
+    ctx.save();
+    ctx.translate(320,0);
+    ctx.scale(-1,1);
+    ctx.drawImage(video,0,0,320,240);
+    ctx.restore();
+    const foto=canvas.toDataURL('image/jpeg',0.4);
+    if(foto&&foto.length>5000) fotoCapturadaAtual=foto;
+  }catch(e){
+    console.log('Erro ao capturar foto:',e);
+  }
+}
+
+function salvarFotoConfirmada(empId,nome,tipo){
+  if(fotoCapturadaAtual){
+    salvarFotoAuditoria(empId,nome,fotoCapturadaAtual,tipo)
+      .catch(e=>console.log('Erro ao salvar foto:',e));
+    fotoCapturadaAtual=null;
+  }
+}
 
 function mostrarToast(msg,cor){
   let t=document.getElementById('toast');
@@ -990,20 +845,6 @@ function mostrarToast(msg,cor){
   t.textContent=msg; t.style.background=cor||'#1F2937';
   setTimeout(()=>{t.style.transform='translateX(-50%) translateY(0)';},10);
   setTimeout(()=>{t.style.transform='translateX(-50%) translateY(80px)';},4000);
-}
-
-// Limpa fotos com mais de 3 meses
-async function limparFotosAntigas(){
-  try{
-    const snap=await get(ref(db,'fotos_auditoria'));
-    if(!snap.exists()) return;
-    const limite=new Date();
-    limite.setMonth(limite.getMonth()-3);
-    const limiteStr=limite.toISOString().split('T')[0];
-    const proms=[];
-    snap.forEach(dia=>{if(dia.key<limiteStr) proms.push(remove(ref(db,'fotos_auditoria/'+dia.key)));});
-    if(proms.length) await Promise.all(proms);
-  }catch(e){}
 }
 
 checarAutorizacao();
