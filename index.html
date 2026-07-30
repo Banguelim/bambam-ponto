@@ -212,7 +212,14 @@ header h1{font-family:'Baloo 2',cursive;font-size:1.4rem;color:#fff;}
       </div>
       <button class="btn btn-cancelar" onclick="fecharModal()">Cancelar</button>
     </div>
-
+    <div id="step2" style="display:none">
+      <div class="emp-avatar" id="av2"></div>
+      <div class="emp-nome" id="nm2">—</div>
+      <div class="emp-cargo" id="cg2">—</div>
+      <div class="confirma-box" id="confirma-box"></div>
+      <button class="btn" id="btn-confirmar" onclick="confirmarPonto()">Confirmar</button>
+      <button class="btn btn-voltar" onclick="voltarStep1()">← Voltar</button>
+    </div>
   </div>
 </div>
 
@@ -411,6 +418,7 @@ window.abrirModal=async function(empId){
   const f=funcionarios[empId];
   if(!f){mostrarToast('❌ Crachá não reconhecido.','#ff4d6d');return;}
   // Captura foto do vídeo frontal no momento da leitura
+  capturarFotoDoScanner(f.id, f.nome);
 
   const hoje=dh();
   const [regsHoje, ultimo] = await Promise.all([
@@ -498,103 +506,76 @@ window.abrirModal=async function(empId){
 };
 
 window.escolher=function(tipo){
-  if(!funcSel)return;
   tipoEsc=tipo;
-  const f=funcSel;
-  const excLabel=modoExcecao?' ⚠️EXCEÇÃO':'';
-  const hora=new Date().toLocaleTimeString('pt-BR');
-
-  // Captura foto do vídeo QR (câmera frontal já aberta) — sem trocar câmera!
-  fotoCapturadaAtual=null;
-  try{
-    const video=document.querySelector('#reader video');
-    if(video&&video.videoWidth>0){
-      const canvas=document.getElementById('canvas-foto');
-      canvas.width=video.videoWidth;
-      canvas.height=video.videoHeight;
-      canvas.getContext('2d').drawImage(video,0,0);
-      const foto=canvas.toDataURL('image/jpeg',0.5);
-      if(foto&&foto.length>5000) fotoCapturadaAtual=foto;
-    }
-  }catch(e){console.log('Foto:',e);}
-
-  // Mostra step2 com botão confirmar
+  const f=funcSel,agora=new Date().toLocaleTimeString('pt-BR');
   document.getElementById('av2').textContent=ini(f.nome);
   document.getElementById('nm2').textContent=f.nome;
   document.getElementById('cg2').textContent='🪪 '+f.id+' · '+(f.cargo||'Colaborador');
-  const box=document.getElementById('confirma-box');
-  const btnConf=document.getElementById('btn-confirmar');
+  const box=document.getElementById('confirma-box'),btn=document.getElementById('btn-confirmar');
+  const excLabel=modoExcecao?' ⚠️EXCEÇÃO':'';
   if(tipo==='entrada'){
     box.className='confirma-box confirma-entrada';
-    box.innerHTML='✅ ENTRADA'+excLabel+'<br><strong>às '+hora+'</strong>';
-    btnConf.className='btn btn-verde-solid';
-    btnConf.textContent='✅ Confirmar ENTRADA';
+    box.innerHTML=`Registrando:<br><strong>✅ ENTRADA${excLabel} às ${agora}</strong>`;
+    btn.className='btn btn-verde-solid';
+    btn.innerHTML='✅ Confirmar ENTRADA';
   } else {
     box.className='confirma-box confirma-saida';
-    box.innerHTML='🚪 SAÍDA'+excLabel+'<br><strong>às '+hora+'</strong>';
-    btnConf.className='btn btn-rosa-solid';
-    btnConf.textContent='🚪 Confirmar SAÍDA';
+    box.innerHTML=`Registrando:<br><strong>🚪 SAÍDA${excLabel} às ${agora}</strong>`;
+    btn.className='btn btn-rosa-solid';
+    btn.innerHTML='🚪 Confirmar SAÍDA';
   }
-
-  // Mostra status da foto
-  const status=document.getElementById('foto-status');
-  if(status) status.textContent=fotoCapturadaAtual?'📸 Foto capturada':'📸 Sem foto';
-
-  btnConf.disabled=false;
-  btnConf.style.opacity='1';
   document.getElementById('step1').style.display='none';
   document.getElementById('step2').style.display='block';
 };
 
-window.cancelarStep2=function(){
-  fotoCapturadaAtual=null;
-  tipoEsc=null;
-  document.getElementById('step1').style.display='block';
-  document.getElementById('step2').style.display='none';
-};
-
-
+window.voltarStep1=function(){tipoEsc=null;document.getElementById('step1').style.display='block';document.getElementById('step2').style.display='none';};
 
 window.confirmarPonto=async function(){
   if(!funcSel||!tipoEsc)return;
   const f=funcSel,agora=new Date();
   const reg={empId:f.id,nome:f.nome,cargo:f.cargo||'Colaborador',tipo:tipoEsc,data:dh(),hora:agora.toLocaleTimeString('pt-BR'),timestamp:agora.toISOString(),excecao:modoExcecao};
 
-  const btnConf=document.getElementById('btn-confirmar');
-  if(btnConf) btnConf.disabled=true;
-
-  // Registra ponto
   if(navigator.onLine){
-    try{ await push(ref(db,'registros/'+dh()),reg); }
-    catch(e){ salvarOffline(reg); }
-  } else { salvarOffline(reg); }
-
-  if(navigator.vibrate) navigator.vibrate([80,40,80]);
-  bloqueadoPorFunc[f.id]=Date.now()+(5*60*1000);
+    try{
+      await push(ref(db,'registros/'+dh()),reg);
+      if(navigator.vibrate)navigator.vibrate([80,40,80]);
+      // Tenta capturar foto neste momento (funcionário ainda confirmando)
+      // Se já tinha foto do momento do QR, usa ela; senão tenta agora
+      if(!fotoCapturadaAtual){
+        capturarFotoDoScanner(f.id,f.nome);
+      }
+      salvarFotoConfirmada(f.id,f.nome,tipoEsc);
+      if(modoExcecao){
+        modoExcecao=false;
+        const btn=document.getElementById('btn-excecao');
+        btn.classList.remove('ativo');
+        btn.innerHTML='⚠️ Exceção';
+      }
+      bloqueadoPorFunc[f.id]=Date.now()+(5*60*1000);
+      fecharModal();
+      mostrarConfirmacao(f.nome.split(' ')[0], tipoEsc, agora.toLocaleTimeString('pt-BR'));
+    }catch(e){
+      // Falhou mesmo com internet → salva offline
+      salvarOffline(reg);
+    }
+  } else {
+    // Sem internet → salva localmente
+    salvarOffline(reg);
+    bloqueadoPorFunc[f.id]=Date.now()+(5*60*1000);
+  }
 
   if(modoExcecao){
     modoExcecao=false;
-    document.getElementById('btn-excecao').classList.remove('ativo');
-    document.getElementById('btn-excecao').innerHTML='⚠️ Exceção';
+    const btn=document.getElementById('btn-excecao');
+    btn.classList.remove('ativo');
+    btn.innerHTML='⚠️ Exceção';
   }
-
-  // Salva foto capturada
-  if(fotoCapturadaAtual) salvarFotoConfirmada(f.id,f.nome,tipoEsc);
-
-  // Fecha modal e mostra confirmação
-  const nome=f.nome.split(' ')[0], tipo=tipoEsc, hora=agora.toLocaleTimeString('pt-BR');
-  document.getElementById('modal').classList.remove('open');
-  funcSel=null; tipoEsc=null; fotoCapturadaAtual=null;
-
-  mostrarConfirmacao(nome, tipo, hora);
-  if(btnConf) btnConf.disabled=false;
+  fecharModal();
 };
 
 window.fecharModal=function(){
   document.getElementById('modal').classList.remove('open');
-  funcSel=null; tipoEsc=null; fotoCapturadaAtual=null;
-  // Só reinicia scanner se não for pelo confirmarPonto
-  // (confirmarPonto reinicia após tirar foto)
+  funcSel=null;tipoEsc=null;
 };
 
 function mostrarConfirmacao(nome, tipo, hora){
@@ -827,9 +808,28 @@ async function limparFotosAntigas(){
 
 
 // ── FOTO DE AUDITORIA ──
-// Fluxo: registra ponto → para QR → abre frontal → tira foto → mostra confirmação → reinicia QR
+// Captura direto do vídeo do scanner frontal — sem trocar câmera!
 let fotoCapturadaAtual=null;
 
+function capturarFotoDoScanner(empId,nome){
+  fotoCapturadaAtual=null;
+  try{
+    const video=document.querySelector('#reader video');
+    if(!video||!video.videoWidth) return;
+    const canvas=document.getElementById('canvas-foto');
+    canvas.width=320; canvas.height=240;
+    const ctx=canvas.getContext('2d');
+    ctx.save();
+    ctx.translate(320,0);
+    ctx.scale(-1,1);
+    ctx.drawImage(video,0,0,320,240);
+    ctx.restore();
+    const foto=canvas.toDataURL('image/jpeg',0.4);
+    if(foto&&foto.length>5000) fotoCapturadaAtual=foto;
+  }catch(e){
+    console.log('Erro ao capturar foto:',e);
+  }
+}
 
 function salvarFotoConfirmada(empId,nome,tipo){
   if(fotoCapturadaAtual){
