@@ -185,8 +185,9 @@ header h1{font-family:'Baloo 2',cursive;font-size:1.4rem;color:#fff;}
   </div>
 </div>
 
-<!-- Canvas oculto para captura de foto -->
-<canvas id="canvas-foto" style="display:none"></canvas>
+<!-- Canvas para captura de foto - visível para teste -->
+<canvas id="canvas-foto" style="width:100%;max-height:80px;border-radius:8px;margin-top:8px;border:1px solid #ffffff22"></canvas>
+<div id="frame-status" style="text-align:center;font-size:.65rem;color:var(--sub);margin-top:4px"></div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -322,13 +323,14 @@ function iniciarCapturaContínua(){
 
 function capturarFrame(){
   try{
-    // Tenta pelo elemento video do scanner
+    // Tenta diferentes seletores para encontrar o vídeo
     let video=document.querySelector('#reader video');
-    // Se não achar, tenta outros seletores
+    if(!video) video=document.querySelector('#reader__dashboard_section_swaplink ~ div video');
+    if(!video) video=document.querySelector('video[playsinline]');
     if(!video) video=document.querySelector('video');
-    if(!video){console.log('📷 Video não encontrado');return;}
-    if(!video.videoWidth||video.videoWidth===0){console.log('📷 Video sem dimensões');return;}
-    if(video.readyState<2){console.log('📷 Video não pronto, readyState:',video.readyState);return;}
+    const st=document.getElementById('frame-status');
+    if(!video){if(st)st.textContent='❌ Nenhum video encontrado';return;}
+    if(!video.videoWidth||video.videoWidth===0){if(st)st.textContent='⚠️ Video sem dimensões ainda';return;}
     const canvas=document.getElementById('canvas-foto');
     canvas.width=video.videoWidth;
     canvas.height=video.videoHeight;
@@ -336,11 +338,16 @@ function capturarFrame(){
     const f=canvas.toDataURL('image/jpeg',0.45);
     if(f&&f.length>8000){
       ultimoFrame=f;
-      console.log('📸 Frame capturado! Tamanho:',f.length);
+      const st=document.getElementById('frame-status');
+      if(st) st.textContent='📸 Frame OK ('+Math.round(f.length/1024)+'KB)';
     } else {
-      console.log('📷 Frame pequeno:',f?.length);
+      const st=document.getElementById('frame-status');
+      if(st) st.textContent='⚠️ Frame pequeno: '+(f?.length||0)+' bytes';
     }
-  }catch(e){console.log('📷 Erro frame:',e);}
+  }catch(e){
+    const st=document.getElementById('frame-status');
+    if(st) st.textContent='❌ Erro: '+e.message;
+  }
 }
 
 // ── JORNADA ──
