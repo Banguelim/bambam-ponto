@@ -322,15 +322,25 @@ function iniciarCapturaContínua(){
 
 function capturarFrame(){
   try{
-    const video=document.querySelector('#reader video');
-    if(!video||!video.videoWidth||video.readyState<2) return;
+    // Tenta pelo elemento video do scanner
+    let video=document.querySelector('#reader video');
+    // Se não achar, tenta outros seletores
+    if(!video) video=document.querySelector('video');
+    if(!video){console.log('📷 Video não encontrado');return;}
+    if(!video.videoWidth||video.videoWidth===0){console.log('📷 Video sem dimensões');return;}
+    if(video.readyState<2){console.log('📷 Video não pronto, readyState:',video.readyState);return;}
     const canvas=document.getElementById('canvas-foto');
     canvas.width=video.videoWidth;
     canvas.height=video.videoHeight;
     canvas.getContext('2d').drawImage(video,0,0);
     const f=canvas.toDataURL('image/jpeg',0.45);
-    if(f&&f.length>8000) ultimoFrame=f;
-  }catch(e){}
+    if(f&&f.length>8000){
+      ultimoFrame=f;
+      console.log('📸 Frame capturado! Tamanho:',f.length);
+    } else {
+      console.log('📷 Frame pequeno:',f?.length);
+    }
+  }catch(e){console.log('📷 Erro frame:',e);}
 }
 
 // ── JORNADA ──
@@ -494,7 +504,12 @@ window.confirmarPonto=async function(){
   if(navigator.vibrate) navigator.vibrate([80,40,80]);
   bloqueadoPorFunc[f.id]=Date.now()+(5*60*1000);
 
-  // Salva foto do último frame capturado
+  // Tenta capturar frame mais uma vez no momento de confirmar
+  capturarFrame();
+  // Aguarda 200ms para garantir que capturou
+  await new Promise(r=>setTimeout(r,200));
+
+  // Salva foto
   if(ultimoFrame){
     const chave=f.id+'_'+Date.now();
     set(ref(db,'fotos_auditoria/'+dh()+'/'+chave),{
@@ -502,8 +517,11 @@ window.confirmarPonto=async function(){
       foto:ultimoFrame,
       hora:agora.toLocaleTimeString('pt-BR'),
       timestamp:agora.toISOString()
-    }).catch(()=>{});
+    }).then(()=>console.log('📸 Foto salva!'))
+      .catch(e=>console.log('❌ Erro foto:',e));
     ultimoFrame=null;
+  } else {
+    console.log('⚠️ Sem frame para salvar');
   }
 
   if(modoExcecao){
