@@ -7,483 +7,452 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&display=swap');
-:root{--rosa:#F472B6;--rosa-d:#DB2777;--verde:#16A34A;--cinza:#F8F8FA;--borda:#E5E7EB;--texto:#1F2937;--sub:#6B7280;--vermelho:#DC2626;--azul:#3B82F6;--laranja:#F59E0B;}
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;900&family=Baloo+2:wght@700;800&display=swap');
+:root{
+  --rosa:#DB2777;--rosa-d:#9D174D;--rosa-l:#FFF0F6;
+  --azul:#2563EB;--verde:#16A34A;--amarelo:#D97706;--vermelho:#DC2626;
+  --bg:#F8FAFC;--card:#FFFFFF;--borda:#E2E8F0;
+  --texto:#1E293B;--sub:#64748B;--hover:#F1F5F9;
+}
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Montserrat',sans-serif;background:#F0F2F5;color:var(--texto);min-height:100vh;}
+body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--texto);min-height:100vh;}
 
+/* SENHA */
 #tela-senha{position:fixed;inset:0;background:linear-gradient(135deg,#1a1a2e,#0f3460);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px;}
-.senha-box{background:#16213e;border:1.5px solid #ffffff15;border-radius:22px;padding:32px;width:100%;max-width:340px;text-align:center;box-shadow:0 20px 60px #0008;}
-.senha-box .logo-s{font-size:3rem;margin-bottom:12px;}
-.senha-box h2{font-size:1.3rem;font-weight:900;color:#F472B6;margin-bottom:6px;}
-.senha-box p{font-size:.82rem;color:#a0aec0;margin-bottom:24px;}
-.senha-box input{width:100%;padding:13px 16px;border:1.5px solid #ffffff20;border-radius:12px;background:#0f3460;color:#f0f0f0;font-family:'Montserrat',sans-serif;font-size:1.1rem;font-weight:700;text-align:center;letter-spacing:4px;margin-bottom:14px;}
-.senha-box input:focus{outline:none;border-color:#F472B6;}
-.senha-box button{width:100%;padding:13px;border:none;border-radius:12px;background:linear-gradient(135deg,#F472B6,#DB2777);color:#fff;font-family:'Montserrat',sans-serif;font-size:1rem;font-weight:800;cursor:pointer;}
-.erro{color:#ff4d6d;font-size:.82rem;margin-top:10px;display:none;font-weight:700;}
+.sb{background:#fff;border-radius:20px;padding:36px;width:100%;max-width:360px;text-align:center;box-shadow:0 20px 60px #0004;}
+.sb .ic{font-size:3rem;margin-bottom:12px;}
+.sb h2{font-family:'Baloo 2',cursive;font-size:1.5rem;color:var(--rosa);margin-bottom:6px;}
+.sb p{font-size:.85rem;color:var(--sub);margin-bottom:24px;}
+.sb input{width:100%;padding:14px;border:2px solid var(--borda);border-radius:12px;font-size:1.2rem;font-weight:700;text-align:center;letter-spacing:6px;margin-bottom:14px;outline:none;}
+.sb input:focus{border-color:var(--rosa);}
+.sb button{width:100%;padding:14px;border:none;border-radius:12px;background:var(--rosa);color:#fff;font-family:'Nunito',sans-serif;font-size:1rem;font-weight:800;cursor:pointer;}
+#erro-senha-admin{color:var(--vermelho);font-size:.85rem;margin-top:10px;display:none;font-weight:700;}
 
-header{background:#fff;border-bottom:2px solid var(--borda);padding:16px 28px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
-.logo{width:44px;height:44px;background:linear-gradient(135deg,var(--rosa),var(--rosa-d));border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;}
-.hl{display:flex;align-items:center;gap:14px;}
-header h1{font-size:1.1rem;font-weight:900;}
-header p{font-size:.75rem;color:var(--sub);margin-top:2px;}
-.live{display:flex;align-items:center;gap:6px;background:#F0FDF4;border:1px solid #86EFAC;padding:6px 14px;border-radius:20px;font-size:.75rem;font-weight:700;color:var(--verde);}
-.dot{width:8px;height:8px;border-radius:50%;background:var(--verde);animation:pulse 1.5s infinite;}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+/* LAYOUT */
+header{background:#fff;border-bottom:1.5px solid var(--borda);padding:0 24px;display:flex;align-items:center;gap:0;position:sticky;top:0;z-index:100;}
+header h1{font-family:'Baloo 2',cursive;font-size:1.3rem;color:var(--rosa);padding:14px 0;margin-right:24px;white-space:nowrap;}
+.tabs{display:flex;gap:2px;overflow-x:auto;flex:1;}
+.tab{padding:14px 16px;border:none;background:transparent;font-family:'Nunito',sans-serif;font-size:.88rem;font-weight:700;color:var(--sub);cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap;transition:.15s;}
+.tab:hover{color:var(--rosa);background:var(--hover);}
+.tab.active{color:var(--rosa);border-bottom-color:var(--rosa);}
+.back-btn{margin-left:auto;padding:8px 16px;border:1.5px solid var(--borda);border-radius:30px;background:transparent;color:var(--sub);font-family:'Nunito',sans-serif;font-size:.82rem;font-weight:700;cursor:pointer;white-space:nowrap;}
+.back-btn:hover{border-color:var(--rosa);color:var(--rosa);}
 
-.tabs{display:flex;gap:4px;background:#fff;border-bottom:2px solid var(--borda);padding:0 20px;overflow-x:auto;}
-.tab{padding:13px 16px;border:none;background:none;cursor:pointer;font-family:'Montserrat',sans-serif;font-size:.82rem;font-weight:700;color:var(--sub);border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap;transition:.15s;}
-.tab:hover{color:var(--rosa-d);}
-.tab.active{color:var(--rosa-d);border-bottom-color:var(--rosa-d);}
-
-main{max-width:1300px;margin:0 auto;padding:24px 16px 80px;}
+main{max-width:1200px;margin:0 auto;padding:24px 20px;}
 .pg{display:none;}
 .pg.active{display:block;}
-.card{background:#fff;border-radius:16px;padding:24px;border:1.5px solid var(--borda);box-shadow:0 2px 12px #0001;margin-bottom:20px;}
-.card h2{font-size:1rem;font-weight:800;margin-bottom:18px;display:flex;align-items:center;gap:8px;}
 
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px;}
-.stat{background:#fff;border-radius:14px;padding:16px;border:1.5px solid var(--borda);text-align:center;}
-.stat .n{font-size:1.8rem;font-weight:900;}
-.stat .l{font-size:.7rem;color:var(--sub);font-weight:600;margin-top:4px;text-transform:uppercase;letter-spacing:.6px;}
-.sr .n{color:var(--rosa-d)}.sv .n{color:var(--verde)}.sa .n{color:var(--azul)}.sc .n{color:var(--sub)}
+/* CARDS */
+.card{background:var(--card);border:1.5px solid var(--borda);border-radius:14px;padding:20px;margin-bottom:16px;}
+.card h2{font-family:'Baloo 2',cursive;font-size:1.05rem;color:var(--rosa);margin-bottom:14px;}
 
-.tw{overflow-x:auto;border-radius:12px;border:1.5px solid var(--borda);}
-table{width:100%;border-collapse:separate;border-spacing:0;font-size:.78rem;}
-th{background:#F3F4F6;padding:8px 10px;text-align:left;font-size:.65rem;text-transform:uppercase;letter-spacing:.6px;color:var(--sub);border-bottom:2px solid var(--borda);white-space:nowrap;}
-td{padding:8px 10px;border-bottom:1px solid var(--borda);white-space:nowrap;}
-tr:last-child td{border-bottom:none;}
+/* FILTROS */
+.fp{background:var(--card);border:1.5px solid var(--borda);border-radius:14px;padding:16px;margin-bottom:16px;}
+.fp h3{font-family:'Baloo 2',cursive;font-size:1rem;color:var(--texto);margin-bottom:12px;}
+.fg{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:10px;}
+.ff{display:flex;flex-direction:column;gap:4px;min-width:130px;}
+.ff label{font-size:.72rem;font-weight:800;color:var(--sub);text-transform:uppercase;}
+.ff input,.ff select{padding:8px 10px;border:1.5px solid var(--borda);border-radius:8px;font-family:'Nunito',sans-serif;font-size:.85rem;color:var(--texto);outline:none;background:#fff;}
+.ff input:focus,.ff select:focus{border-color:var(--rosa);}
+.fa{display:flex;gap:8px;flex-wrap:wrap;}
+.btn{padding:9px 18px;border:none;border-radius:8px;font-family:'Nunito',sans-serif;font-size:.85rem;font-weight:700;cursor:pointer;}
+.br{background:var(--rosa);color:#fff;}
+.bc{background:var(--card);border:1.5px solid var(--borda);color:var(--texto);}
+.bc:hover{border-color:var(--rosa);color:var(--rosa);}
+.bg{background:#16A34A;color:#fff;}
+.bsm{font-size:.78rem;padding:7px 12px;}
 
-/* STICKY COLS */
-th.sn,td.sn{position:sticky;left:0;z-index:2;background:#F3F4F6;}
-th.so,td.so{position:sticky;right:0;z-index:2;background:#F3F4F6;border-left:1.5px solid var(--borda);}
-tr.ln td{background:#fff;} tr.ln td.sn{background:#fff;} tr.ln td.so{background:#fff;}
-tr.lf td{background:#FEF2F2;} tr.lf td.sn{background:#FEF2F2;} tr.lf td.so{background:#FEF2F2;}
-tr.la td{background:#EFF6FF;} tr.la td.sn{background:#EFF6FF;} tr.la td.so{background:#EFF6FF;}
-tr.lfr td{background:#F0FDF4;} tr.lfr td.sn{background:#F0FDF4;} tr.lfr td.so{background:#F0FDF4;}
-tr.le td{background:#FFFBEB;} tr.le td.sn{background:#FFFBEB;} tr.le td.so{background:#FFFBEB;}
-tr:hover td{filter:brightness(.97);}
+/* DASHBOARD */
+.stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-bottom:16px;}
+.stat{background:var(--card);border:1.5px solid var(--borda);border-radius:12px;padding:16px;text-align:center;}
+.stat .val{font-family:'Baloo 2',cursive;font-size:2rem;font-weight:900;color:var(--rosa);}
+.stat .lbl{font-size:.75rem;color:var(--sub);font-weight:700;margin-top:2px;}
 
-td.hora{font-family:monospace;font-weight:700;}
-td.vazio{color:#D1D5DB;font-style:italic;}
-td.horas{font-family:monospace;font-weight:700;color:var(--verde);}
-td.exc-cell{color:#92400E;font-family:monospace;font-size:.75rem;}
-
-.badge{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:20px;font-size:.65rem;font-weight:700;}
-.be{background:#F0FDF4;color:var(--verde);border:1px solid #86EFAC;}
-.bsa{background:#FFF0F6;color:var(--rosa-d);border:1px solid #FECDD3;}
-.bex{background:#FEF3C7;color:#92400E;border:1px solid #FCD34D;}
-.bds{background:#FEE2E2;color:var(--vermelho);border:1px solid #FCA5A5;}
-
-.fp{background:var(--cinza);border-radius:12px;padding:18px;border:1.5px solid var(--borda);margin-bottom:20px;}
-.fp h3{font-size:.85rem;font-weight:800;margin-bottom:14px;}
-.fg{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
-@media(max-width:480px){.fg{grid-template-columns:1fr}}
-.ff{display:flex;flex-direction:column;gap:5px;}
-.ff label{font-size:.72rem;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.6px;}
-.ff input[type=date],.ff select{padding:10px 14px;border:1.5px solid var(--borda);border-radius:10px;font-family:'Montserrat',sans-serif;font-size:.88rem;background:#fff;color:var(--texto);width:100%;}
-.ff input:focus,.ff select:focus{outline:none;border-color:var(--rosa);}
-.fa{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
-
-.rb{background:#F0FDF4;border:1.5px solid #86EFAC;border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:.82rem;font-weight:600;color:var(--verde);display:flex;flex-wrap:wrap;gap:16px;align-items:center;}
-.rb span strong{color:var(--texto);}
-
-.os{padding:4px 8px;border:1.5px solid var(--borda);border-radius:8px;font-family:'Montserrat',sans-serif;font-size:.7rem;font-weight:700;cursor:pointer;background:var(--cinza);color:var(--texto);min-width:110px;}
-.os:focus{outline:none;border-color:var(--rosa);}
-.os.normal{background:#F0FDF4;color:#15803D;border-color:#86EFAC;}
-.os.ferias{background:#EFF6FF;color:#1D4ED8;border-color:#93C5FD;}
-.os.doenca{background:#FEF3C7;color:#92400E;border-color:#FCD34D;}
-.os.falta{background:#FEE2E2;color:var(--vermelho);border-color:#FCA5A5;}
-.os.licenca{background:#F3E8FF;color:#7C3AED;border-color:#C4B5FD;}
-.os.atestado{background:#FFF7ED;color:#C2410C;border-color:#FDBA74;}
-.os.feriado{background:#F0FDF4;color:#15803D;border-color:#86EFAC;}
-.os.folga{background:#F3F4F6;color:var(--sub);}
-.os.excecao{background:#FEF3C7;color:#92400E;border-color:#FCD34D;}
-.os.outro{background:#F3F4F6;color:var(--sub);}
-
-.fg2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-@media(max-width:560px){.fg2{grid-template-columns:1fr}}
-.fi{display:flex;flex-direction:column;gap:5px;}
-.fi label{font-size:.75rem;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.8px;}
-.fi input,.fi select{padding:10px 14px;border:1.5px solid var(--borda);border-radius:10px;font-family:'Montserrat',sans-serif;font-size:.88rem;color:var(--texto);background:var(--cinza);transition:border-color .2s;}
-.fi input:focus,.fi select:focus{outline:none;border-color:var(--rosa);background:#fff;}
-
-.btn{padding:10px 20px;border:none;border-radius:10px;font-family:'Montserrat',sans-serif;font-size:.88rem;font-weight:700;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;gap:7px;}
-.btn:hover{opacity:.88;transform:translateY(-1px);}
-.br{background:linear-gradient(135deg,var(--rosa),var(--rosa-d));color:#fff;box-shadow:0 4px 14px #F472B644;}
-.bv{background:#DCFCE7;color:var(--verde);border:1.5px solid #86EFAC;}
-.bp{background:#FEE2E2;color:var(--vermelho);border:1.5px solid #FCA5A5;}
-.bc{background:#F3F4F6;color:var(--sub);}
-.bx{background:#217346;color:#fff;}
-.bsm{padding:7px 12px;font-size:.78rem;border-radius:8px;}
-.bds-btn{background:#FEE2E2;color:var(--vermelho);border:1.5px solid #FCA5A5;}
-
-.el{display:flex;flex-direction:column;gap:10px;}
-.er{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:12px;border:1.5px solid var(--borda);background:var(--cinza);transition:border-color .2s;}
-.er:hover{border-color:var(--rosa);background:#fff;}
-.er.desligado{opacity:.6;border-style:dashed;}
-.av{width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,#FFDCE8,#FFF0F6);border:2px solid var(--borda);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:900;color:var(--rosa-d);}
+/* LISTA PRESENTES */
+.el{display:flex;flex-direction:column;gap:8px;}
+.er{display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--hover);border-radius:10px;}
+.av{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#FFDCE8,var(--rosa-l));border:1.5px solid var(--borda);display:flex;align-items:center;justify-content:center;font-size:.82rem;font-weight:900;color:var(--rosa-d);flex-shrink:0;}
 .ei{flex:1;min-width:0;}
-.ei .nm{font-size:.88rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.ei .mt{font-size:.7rem;color:var(--sub);margin-top:2px;display:flex;gap:8px;flex-wrap:wrap;}
-.ea{display:flex;gap:6px;flex-shrink:0;}
-.cb{display:inline-block;padding:2px 8px;border-radius:20px;font-size:.65rem;font-weight:700;background:#FFF0F6;color:var(--rosa-d);border:1px solid #FECDD3;}
-.spp{color:var(--verde)!important;font-weight:700;}
-.jt{background:#EFF6FF;color:#1D4ED8;border:1px solid #93C5FD;display:inline-block;padding:2px 8px;border-radius:20px;font-size:.62rem;font-weight:700;}
-.dt{background:#FEE2E2;color:var(--vermelho);border:1px solid #FCA5A5;display:inline-block;padding:2px 8px;border-radius:20px;font-size:.62rem;font-weight:700;}
+.nm{font-size:.88rem;font-weight:900;color:var(--texto);}
+.mt{font-size:.72rem;color:var(--sub);display:flex;gap:8px;flex-wrap:wrap;margin-top:2px;}
+.cb{background:var(--borda);border-radius:20px;padding:1px 8px;}
+.spp{color:var(--verde);font-weight:700;}
 
-.mo{display:none;position:fixed;inset:0;background:#0006;z-index:100;align-items:center;justify-content:center;padding:20px;}
+/* TABELA REGISTROS */
+.resumo{display:none;flex-wrap:wrap;gap:12px;padding:12px 16px;background:var(--card);border:1.5px solid var(--borda);border-radius:10px;margin-bottom:12px;font-size:.82rem;font-weight:700;}
+.resumo span{display:flex;align-items:center;gap:4px;}
+.tw{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:.82rem;}
+th{padding:10px 10px;text-align:left;font-size:.72rem;font-weight:800;color:var(--sub);text-transform:uppercase;border-bottom:2px solid var(--borda);background:var(--hover);position:sticky;top:0;}
+td{padding:8px 10px;border-bottom:1px solid var(--borda);}
+.sn{min-width:140px;position:sticky;left:0;background:inherit;z-index:1;}
+.so{min-width:200px;position:sticky;right:0;background:inherit;z-index:1;}
+tr.ln td{background:#fff;}
+tr.lf td{background:#FEF2F2;}
+tr.la td{background:#EFF6FF;}
+tr.lfr td{background:#F0FDF4;}
+tr.le td{background:#FFFBEB;}
+tr:hover td{filter:brightness(.97);}
+.hora{font-family:monospace;font-weight:700;color:var(--texto);}
+.horas{font-family:monospace;font-weight:900;color:var(--verde);}
+.vazio{color:#CBD5E1;text-align:center;}
+.exc-cell{font-family:monospace;font-weight:700;color:var(--amarelo);}
+.os{padding:4px 8px;border:1.5px solid var(--borda);border-radius:6px;font-size:.75rem;font-weight:700;cursor:pointer;background:#fff;color:var(--texto);}
+.os.ferias{background:#DBEAFE;border-color:#93C5FD;color:#1D4ED8;}
+.os.doenca{background:#FEF3C7;border-color:#FCD34D;color:#92400E;}
+.os.falta{background:#FEE2E2;border-color:#FCA5A5;color:#991B1B;}
+.os.atestado{background:#FEF9C3;border-color:#FDE047;color:#854D0E;}
+.os.licenca{background:#F3E8FF;border-color:#D8B4FE;color:#6B21A8;}
+.os.folga{background:#DCFCE7;border-color:#86EFAC;color:#166534;}
+.os.feriado{background:#D1FAE5;border-color:#6EE7B7;color:#065F46;}
+.os.excecao{background:#FFF7ED;border-color:#FED7AA;color:#9A3412;}
+.sb3{color:var(--verde);font-weight:900;font-size:.8rem;}
+
+/* FUNCIONÁRIOS */
+.func-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;}
+.func-card{background:var(--card);border:1.5px solid var(--borda);border-radius:12px;padding:16px;display:flex;align-items:center;gap:12px;}
+.func-card:hover{border-color:var(--rosa);box-shadow:0 2px 12px #DB277715;}
+.fav{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#FFDCE8,var(--rosa-l));border:1.5px solid var(--borda);display:flex;align-items:center;justify-content:center;font-size:.95rem;font-weight:900;color:var(--rosa-d);flex-shrink:0;}
+.fav.desl{background:#F1F5F9;color:var(--sub);}
+.fi{flex:1;min-width:0;}
+.fn{font-size:.92rem;font-weight:900;color:var(--texto);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.fc{font-size:.72rem;color:var(--sub);margin-top:2px;}
+.fb{font-size:.72rem;color:var(--amarelo);margin-top:2px;font-weight:700;}
+.fbt{display:flex;gap:6px;flex-shrink:0;}
+.fbt button{padding:6px 10px;border-radius:7px;border:1.5px solid var(--borda);background:#fff;cursor:pointer;font-size:.78rem;font-weight:700;color:var(--sub);}
+.fbt button:hover{border-color:var(--rosa);color:var(--rosa);}
+.fbt .rb{border-color:#FCA5A5;color:var(--vermelho);}
+.fbt .rb:hover{background:#FEF2F2;}
+
+/* ADD FUNC */
+.add-form{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;padding:16px;background:var(--hover);border-radius:10px;margin-bottom:14px;}
+.add-form label{font-size:.72rem;font-weight:800;color:var(--sub);text-transform:uppercase;display:block;margin-bottom:3px;}
+.add-form input{width:100%;padding:8px 10px;border:1.5px solid var(--borda);border-radius:8px;font-family:'Nunito',sans-serif;font-size:.88rem;outline:none;}
+.add-form input:focus{border-color:var(--rosa);}
+
+/* MODAL */
+.mo{display:none;position:fixed;inset:0;background:#0006;z-index:200;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;}
 .mo.open{display:flex;}
-.md{background:#fff;border-radius:18px;padding:28px;width:100%;max-width:640px;box-shadow:0 20px 60px #0003;animation:pi .25s ease;max-height:92vh;overflow-y:auto;}
-.md h3{font-size:1rem;font-weight:800;margin-bottom:16px;}
-@keyframes pi{from{transform:scale(.92);opacity:0}to{transform:scale(1);opacity:1}}
+.mc{background:#fff;border-radius:16px;padding:24px;width:100%;max-width:600px;margin:auto;}
+.mc h3{font-family:'Baloo 2',cursive;font-size:1.1rem;color:var(--rosa);margin-bottom:16px;}
+.mf{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.mf label{font-size:.72rem;font-weight:800;color:var(--sub);text-transform:uppercase;display:block;margin-bottom:3px;}
+.mf input,.mf select{width:100%;padding:8px 10px;border:1.5px solid var(--borda);border-radius:8px;font-family:'Nunito',sans-serif;font-size:.88rem;outline:none;}
+.mf input:focus{border-color:var(--rosa);}
+.ms{border-top:1.5px solid var(--borda);margin:16px 0;padding-top:16px;}
+.ms h4{font-size:.82rem;font-weight:800;color:var(--sub);text-transform:uppercase;margin-bottom:10px;}
 
-.sw{position:relative;margin-bottom:16px;}
-.sw input{width:100%;padding:10px 14px 10px 38px;border:1.5px solid var(--borda);border-radius:10px;font-family:'Montserrat',sans-serif;font-size:.88rem;background:var(--cinza);color:var(--texto);}
-.sw input:focus{outline:none;border-color:var(--rosa);background:#fff;}
-.si{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--sub);pointer-events:none;}
-
-.em{text-align:center;padding:40px 20px;color:var(--sub);font-size:.9rem;}
-.em .ic{font-size:2.5rem;margin-bottom:10px;}
-.ct{font-size:.8rem;color:var(--sub);font-weight:600;}
-.ct strong{color:var(--texto);}
-.lt{text-align:center;padding:40px;color:var(--sub);}
-.sp2{width:32px;height:32px;border:3px solid var(--borda);border-top-color:var(--rosa);border-radius:50%;animation:spi .7s linear infinite;margin:0 auto 12px;}
-@keyframes spi{to{transform:rotate(360deg)}}
-.sb3{display:inline-block;background:#F0FDF4;color:#15803D;border:1px solid #86EFAC;border-radius:20px;padding:2px 8px;font-size:.65rem;font-weight:700;margin-left:6px;animation:fo 2s forwards;}
-@keyframes fo{0%{opacity:1}70%{opacity:1}100%{opacity:0}}
-
-/* JORNADA POR DIA */
-.dias-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:14px;}
-@media(max-width:600px){.dias-grid{grid-template-columns:repeat(4,1fr);}}
-.dia-card{border:1.5px solid var(--borda);border-radius:10px;padding:8px;background:var(--cinza);}
-.dia-card.tem-jornada{border-color:var(--rosa);background:#FFF0F6;}
+/* DIAS JORNADA */
+.dias-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;}
+.dia-card{background:var(--hover);border:1.5px solid var(--borda);border-radius:10px;padding:10px;}
+.dia-card.tem-jornada{border-color:var(--rosa);background:var(--rosa-l);}
 .dia-card label{font-size:.7rem;font-weight:800;color:var(--sub);display:block;margin-bottom:6px;text-transform:uppercase;}
-.dia-card.tem-jornada label{color:var(--rosa-d);}
-.periodo-mini{display:flex;flex-direction:column;gap:4px;margin-bottom:4px;}
-.periodo-mini input[type=time]{padding:4px 6px;border:1px solid var(--borda);border-radius:6px;font-family:'Montserrat',sans-serif;font-size:.72rem;width:100%;}
-.periodo-mini input:focus{outline:none;border-color:var(--rosa);}
-.add-per-btn{font-size:.65rem;padding:3px 6px;border:1px dashed var(--borda);border-radius:6px;background:none;cursor:pointer;color:var(--sub);width:100%;margin-top:2px;}
-.add-per-btn:hover{border-color:var(--rosa);color:var(--rosa-d);}
-.rem-per-btn{font-size:.6rem;padding:2px 5px;border:none;background:#FEE2E2;color:var(--vermelho);border-radius:4px;cursor:pointer;margin-left:4px;}
+.periodo-mini{display:flex;gap:4px;align-items:center;margin-bottom:4px;}
+.periodo-mini input{width:70px;padding:4px 5px;border:1px solid var(--borda);border-radius:5px;font-size:.75rem;}
+.periodo-mini button{padding:2px 6px;border:none;border-radius:4px;cursor:pointer;font-size:.72rem;background:#FEE2E2;color:var(--vermelho);}
+.add-per{font-size:.72rem;padding:3px 8px;border:1px dashed var(--borda);border-radius:5px;cursor:pointer;background:transparent;color:var(--sub);}
 
 /* AUSÊNCIAS */
 .aus-list{display:flex;flex-direction:column;gap:6px;margin-top:8px;}
-.aus-item{background:#F8FAFC;border:1.5px solid var(--borda);border-radius:10px;padding:8px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;}
-.aus-badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:.65rem;font-weight:700;}
-.ab-ferias{background:#EFF6FF;color:#1D4ED8;border:1px solid #93C5FD;}
-.ab-doenca{background:#FEF3C7;color:#92400E;border:1px solid #FCD34D;}
-.ab-licenca{background:#F3E8FF;color:#7C3AED;border:1px solid #C4B5FD;}
-.ab-atestado{background:#FFF7ED;color:#C2410C;border:1px solid #FDBA74;}
-.ab-outro{background:#F3F4F6;color:var(--sub);border:1px solid var(--borda);}
+.aus-item{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--hover);border-radius:8px;font-size:.8rem;}
+.aus-item .aus-info{flex:1;}
+.aus-item button{padding:3px 8px;border:1px solid #FCA5A5;border-radius:5px;background:#FEF2F2;color:var(--vermelho);cursor:pointer;font-size:.72rem;}
 
-.fer-item{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#F0FDF4;border:1.5px solid #86EFAC;border-radius:10px;margin-bottom:8px;font-size:.82rem;}
-.fer-local{background:#EFF6FF;border-color:#93C5FD;}
+/* MODAL EDICAO */
+.ed-item{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--hover);border-radius:8px;margin-bottom:6px;font-size:.82rem;}
+.ed-hora{font-family:monospace;font-weight:700;min-width:60px;}
+.ed-tipo{font-weight:700;flex:1;}
+.ed-btns{display:flex;gap:5px;}
+.ed-btns button{padding:4px 8px;border-radius:6px;border:1.5px solid var(--borda);background:#fff;cursor:pointer;font-size:.75rem;font-weight:700;}
 
-.config-card{background:var(--cinza);border-radius:12px;padding:20px;border:1.5px solid var(--borda);margin-bottom:16px;}
-.config-card h3{font-size:.9rem;font-weight:800;margin-bottom:14px;}
-.cf{display:flex;flex-direction:column;gap:5px;margin-bottom:12px;}
-.cf label{font-size:.75rem;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.6px;}
-.cf input{padding:10px 14px;border:1.5px solid var(--borda);border-radius:10px;font-family:'Montserrat',sans-serif;font-size:.88rem;color:var(--texto);background:#fff;}
-.cf input:focus{outline:none;border-color:var(--rosa);}
-.aviso{background:#FEF3C7;border:1.5px solid #FCD34D;border-radius:10px;padding:12px 16px;font-size:.78rem;font-weight:600;color:#92400E;margin-bottom:16px;}
-.divider{border:none;border-top:1.5px solid var(--borda);margin:14px 0;}
-.legenda{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;font-size:.7rem;font-weight:600;}
-.leg-item{display:flex;align-items:center;gap:4px;}
-.leg-cor{width:10px;height:10px;border-radius:3px;}
-.filtro-func{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
-.filtro-func button{padding:6px 14px;border-radius:20px;border:1.5px solid var(--borda);background:var(--cinza);cursor:pointer;font-family:'Montserrat',sans-serif;font-size:.78rem;font-weight:700;color:var(--sub);transition:.15s;}
-.filtro-func button.ativo{background:var(--rosa-d);color:#fff;border-color:var(--rosa-d);}
+/* MODAL QR */
+.qr-cracha{background:#fff;border:2px solid var(--borda);border-radius:14px;padding:20px;text-align:center;max-width:260px;margin:0 auto 16px;}
+.qr-av{width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#FFDCE8,var(--rosa-l));margin:0 auto 8px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:900;color:var(--rosa-d);}
+
+/* FERIADOS */
+.fer-list{display:flex;flex-direction:column;gap:6px;}
+.fer-item{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--hover);border-radius:8px;font-size:.82rem;}
+.fer-data{font-weight:700;min-width:80px;}
+.fer-desc{flex:1;color:var(--sub);}
+.fer-tipo{font-size:.72rem;font-weight:700;padding:2px 8px;border-radius:10px;background:var(--borda);}
+
+/* TOAST */
+.lt{text-align:center;padding:40px;color:var(--sub);}
+.sp2{width:28px;height:28px;border:3px solid var(--rosa);border-top-color:transparent;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.em{text-align:center;padding:40px;color:var(--sub);}
+.em .ic{font-size:2.5rem;margin-bottom:8px;}
+#toast-admin{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#1E293B;color:#fff;padding:12px 24px;border-radius:30px;font-family:'Nunito',sans-serif;font-weight:700;font-size:.9rem;box-shadow:0 8px 24px #0004;transition:transform .3s;z-index:999;white-space:nowrap;max-width:90vw;text-align:center;}
+
+/* AUDITORIA */
 </style>
 </head>
 <body>
 
 <div id="tela-senha">
-  <div class="senha-box">
-    <div class="logo-s">🍼</div>
-    <h2>BAMBAM BABY – Admin</h2>
-    <p>Digite a senha de administrador</p>
-    <input type="password" id="input-senha-admin" placeholder="••••••••" onkeydown="if(event.key==='Enter')verificarSenhaAdmin()">
+  <div class="sb">
+    <div class="ic">🍼</div>
+    <h2>BAMBAM BABY</h2>
+    <p>Painel Administrativo</p>
+    <input type="password" id="input-senha-admin" placeholder="••••••"
+      onkeydown="if(event.key==='Enter')verificarSenhaAdmin()">
     <button onclick="verificarSenhaAdmin()">🔓 Entrar</button>
-    <div class="erro" id="erro-senha-admin">❌ Senha incorreta!</div>
+    <div id="erro-senha-admin">❌ Senha incorreta!</div>
   </div>
 </div>
+
+<div id="toast-admin"></div>
 
 <header>
-  <div class="hl">
-    <div class="logo">🍼</div>
-    <div><h1>BAMBAM BABY – Admin</h1><p>Painel de controle</p></div>
+  <h1>🍼 Admin</h1>
+  <div class="tabs">
+    <button class="tab active" onclick="trocarTab('dash',this)">📊 Dashboard</button>
+    <button class="tab" onclick="trocarTab('reg',this)">🕐 Registros</button>
+    <button class="tab" onclick="trocarTab('func',this)">👥 Funcionários</button>
+    <button class="tab" onclick="trocarTab('audit',this)">📸 Auditoria</button>
+    <button class="tab" onclick="trocarTab('feriados',this)">📅 Feriados</button>
+    <button class="tab" onclick="trocarTab('config',this)">⚙️ Config</button>
   </div>
-  <div class="live"><div class="dot"></div>Ao vivo</div>
+  <button class="back-btn" onclick="location.href='index.html'">← Ponto</button>
 </header>
-
-<div class="tabs">
-  <button class="tab active" onclick="trocarTab('dash',this)">📊 Dashboard</button>
-  <button class="tab" onclick="trocarTab('reg',this)">🕐 Registros</button>
-  <button class="tab" onclick="trocarTab('func',this)">👥 Funcionários</button>
-  <button class="tab" onclick="trocarTab('feriados',this)">📅 Feriados</button>
-  <button class="tab" onclick="trocarTab('audit',this)">📸 Auditoria</button>
-  <button class="tab" onclick="trocarTab('config',this)">⚙️ Config</button>
-</div>
 
 <main>
 
 <!-- DASHBOARD -->
 <div class="pg active" id="pg-dash">
   <div class="stats">
-    <div class="stat sr"><div class="n" id="st">0</div><div class="l">Total ativos</div></div>
-    <div class="stat sv"><div class="n" id="sp3">0</div><div class="l">Presentes hoje</div></div>
-    <div class="stat sa"><div class="n" id="sr2">0</div><div class="l">Registros hoje</div></div>
-    <div class="stat sc"><div class="n" id="sa2">0</div><div class="l">Ausentes hoje</div></div>
+    <div class="stat"><div class="val" id="st">—</div><div class="lbl">Funcionários Ativos</div></div>
+    <div class="stat"><div class="val" id="sp3">—</div><div class="lbl">Presentes Agora</div></div>
+    <div class="stat"><div class="val" id="sa2">—</div><div class="lbl">Ausentes Hoje</div></div>
+    <div class="stat"><div class="val" id="sr2">—</div><div class="lbl">Registros Hoje</div></div>
   </div>
   <div class="card">
     <h2>✅ Presentes agora</h2>
-    <div id="pl"><div class="em"><div class="ic">👥</div>Nenhum presente.</div></div>
+    <div id="pl"><div class="em"><div class="ic">👥</div>Carregando…</div></div>
   </div>
   <div class="card">
     <h2>🕐 Últimos registros</h2>
-    <div class="tw"><table><thead><tr><th>Funcionário</th><th>Tipo</th><th>Hora</th><th>Exc.</th></tr></thead><tbody id="ur"></tbody></table></div>
+    <div id="ur"></div>
   </div>
 </div>
 
 <!-- REGISTROS -->
 <div class="pg" id="pg-reg">
   <div class="fp">
-    <h3>🗓️ Selecione o período</h3>
+    <h3>🕐 Relatório de registros</h3>
     <div class="fg">
       <div class="ff"><label>Data inicial</label><input type="date" id="di"></div>
       <div class="ff"><label>Data final</label><input type="date" id="df"></div>
+      <div class="ff"><label>Funcionário</label>
+        <select id="ff-func" onchange="setFiltroFunc(this.value)">
+          <option value="">Todos</option>
+        </select>
+      </div>
     </div>
     <div class="fa">
       <button class="btn br" onclick="buscar()">🔍 Buscar</button>
-      <button class="btn bx" onclick="exportar()">📊 Exportar Excel</button>
       <button class="btn bc bsm" onclick="setHoje()">Hoje</button>
-      <button class="btn bc bsm" onclick="setSemana()">Esta semana</button>
+      <button class="btn bc bsm" onclick="setSemana()">Semana</button>
       <button class="btn bc bsm" onclick="setMes()">Este mês</button>
+      <button class="btn bg bsm" onclick="exportar()">📥 Excel</button>
     </div>
   </div>
-  <div id="resumo" style="display:none" class="rb"></div>
-  <div class="card">
-    <div class="legenda">
-      <div class="leg-item"><div class="leg-cor" style="background:#fff;border:1px solid #E5E7EB"></div>Normal</div>
-      <div class="leg-item"><div class="leg-cor" style="background:#FEF2F2"></div>Falta</div>
-      <div class="leg-item"><div class="leg-cor" style="background:#EFF6FF"></div>Ausência justificada</div>
-      <div class="leg-item"><div class="leg-cor" style="background:#F0FDF4"></div>Feriado/Folga</div>
-      <div class="leg-item"><div class="leg-cor" style="background:#FFFBEB"></div>Com exceção</div>
-    </div>
-    <h2>📋 Registros — todos os funcionários</h2>
-    <div id="rc"><div class="em"><div class="ic">🗓️</div>Selecione um período acima.</div></div>
-  </div>
+  <div class="resumo" id="resumo"></div>
+  <div id="rc"><div class="em"><div class="ic">📋</div>Selecione o período e clique em Buscar.</div></div>
 </div>
 
 <!-- FUNCIONÁRIOS -->
 <div class="pg" id="pg-func">
   <div class="card">
-    <h2>➕ Adicionar funcionário</h2>
-    <div class="fg2">
-      <div class="fi" style="grid-column:1/-1"><label>Nome completo</label><input type="text" id="nn" placeholder="Ex: MARIA SILVA" oninput="this.value=this.value.toUpperCase()"></div>
-      <div class="fi"><label>Cargo</label><input type="text" id="nc" placeholder="Ex: Colaboradora"></div>
-      <div class="fi"><label>ID (opcional)</label><input type="text" id="ni" placeholder="Gerado automaticamente"></div>
-      <div class="fi"><label>Data de admissão</label><input type="date" id="nd"></div>
-      <div class="fi"><label>Férias após (meses)</label><input type="number" id="nf" value="12" min="1" max="24"></div>
+    <h2>➕ Novo funcionário</h2>
+    <div class="add-form">
+      <div><label>Nome completo</label><input id="nn" placeholder="NOME" style="text-transform:uppercase"></div>
+      <div><label>Cargo</label><input id="nc" placeholder="Colaborador"></div>
+      <div><label>ID (ex: EMP012)</label><input id="ni" placeholder="Auto"></div>
+      <div><label>Admissão</label><input type="date" id="nd"></div>
+      <div><label>Meses p/ férias</label><input type="number" id="nf" value="12" min="1"></div>
     </div>
-    <br>
     <button class="btn br" onclick="addFunc()">➕ Adicionar</button>
   </div>
   <div class="card">
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:10px">
-      <h2 style="margin:0">👥 Funcionários</h2>
-      <span class="ct">Total: <strong id="tc">0</strong></span>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+      <h2 style="margin:0">👥 Funcionários <span id="tc" style="font-size:.82rem;color:var(--sub);font-weight:600"></span></h2>
+      <input id="bf" placeholder="🔍 Buscar..." oninput="renderF()" style="padding:6px 10px;border:1.5px solid var(--borda);border-radius:8px;font-family:'Nunito',sans-serif;font-size:.85rem;outline:none;flex:1;min-width:120px">
+      <div style="display:flex;gap:4px">
+        <button class="btn bc bsm" onclick="filtroFunc='ativos';renderF()">Ativos</button>
+        <button class="btn bc bsm" onclick="filtroFunc='desligados';renderF()">Desligados</button>
+        <button class="btn bc bsm" onclick="filtroFunc='todos';renderF()">Todos</button>
+      </div>
     </div>
-    <div class="filtro-func">
-      <button class="ativo" onclick="setFiltroFunc('ativos',this)">✅ Ativos</button>
-      <button onclick="setFiltroFunc('desligados',this)">❌ Desligados</button>
-      <button onclick="setFiltroFunc('todos',this)">👥 Todos</button>
-    </div>
-    <div class="sw"><span class="si">🔍</span><input type="text" id="bf" placeholder="Buscar…" oninput="renderF()"></div>
-    <div class="el" id="fl"><div class="em"><div class="ic">👤</div>Carregando…</div></div>
+    <div class="func-grid" id="fl"></div>
   </div>
 </div>
 
-<!-- AUDITORIA FOTOS -->
+<!-- AUDITORIA -->
 <div class="pg" id="pg-audit">
   <div class="fp">
-    <h3>📸 Fotos de auditoria — primeira entrada do dia</h3>
+    <h3>📸 Auditoria de fotos</h3>
     <div class="fg">
-      <div class="ff"><label>Data</label><input type="date" id="audit-data"></div>
+      <div class="ff"><label>Funcionário</label>
+        <select id="audit-func"><option value="">👥 Todos</option></select>
+      </div>
+      <div class="ff"><label>Data inicial</label><input type="date" id="audit-di"></div>
+      <div class="ff"><label>Data final</label><input type="date" id="audit-df"></div>
     </div>
     <div class="fa">
       <button class="btn br" onclick="buscarFotos()">🔍 Buscar fotos</button>
+      <button class="btn bc bsm" onclick="setAuditHoje()">Hoje</button>
+      <button class="btn bc bsm" onclick="setAuditMes()">Este mês</button>
     </div>
   </div>
   <div class="card">
-    <h2>📸 Fotos do dia</h2>
-    <p style="font-size:.78rem;color:var(--sub);margin-bottom:16px">Fotos tiradas automaticamente na primeira entrada. Armazenadas por 3 meses.</p>
-    <div id="audit-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px">
-      <div class="em"><div class="ic">📸</div>Selecione uma data acima.</div>
-    </div>
+    <h2>📸 Fotos por funcionário</h2>
+    <p style="font-size:.78rem;color:var(--sub);margin-bottom:16px">Foto tirada ao pressionar INICIAR no tablet. Armazenadas por 3 meses.</p>
+    <div id="audit-grid"><div class="em"><div class="ic">📸</div>Selecione o período acima.</div></div>
   </div>
 </div>
 
 <!-- FERIADOS -->
 <div class="pg" id="pg-feriados">
   <div class="card">
-    <h2>➕ Adicionar feriado ou folga</h2>
-    <div class="fg2">
-      <div class="fi"><label>Data</label><input type="date" id="fer-data"></div>
-      <div class="fi"><label>Tipo</label>
+    <h2>➕ Adicionar feriado local</h2>
+    <div class="fg" style="margin-bottom:10px">
+      <div class="ff"><label>Data</label><input type="date" id="fer-data"></div>
+      <div class="ff"><label>Tipo</label>
         <select id="fer-tipo">
-          <option value="Feriado local">📍 Feriado local/municipal</option>
-          <option value="Feriado estadual">🗺️ Feriado estadual</option>
-          <option value="Folga coletiva">🏖️ Folga coletiva</option>
-          <option value="Ponto facultativo">📋 Ponto facultativo</option>
+          <option value="municipal">Municipal</option>
+          <option value="estadual">Estadual</option>
+          <option value="facultativo">Facultativo</option>
+          <option value="folga">Folga empresa</option>
         </select>
       </div>
-      <div class="fi" style="grid-column:1/-1"><label>Descrição</label><input type="text" id="fer-desc" placeholder="Ex: Aniversário da cidade…"></div>
+      <div class="ff" style="flex:2"><label>Descrição</label><input id="fer-desc" placeholder="Ex: Aniversário da cidade"></div>
     </div>
-    <br>
     <button class="btn br" onclick="addFeriado()">➕ Adicionar</button>
   </div>
-  <div class="card"><h2>🇧🇷 Feriados nacionais</h2><div id="lista-nacionais"></div></div>
-  <div class="card"><h2>📍 Feriados locais e folgas</h2><div id="lista-locais"><div class="em"><div class="ic">📅</div>Nenhum cadastrado.</div></div></div>
+  <div class="card">
+    <h2>📅 Feriados cadastrados</h2>
+    <div id="fer-lista"></div>
+  </div>
 </div>
 
 <!-- CONFIG -->
 <div class="pg" id="pg-config">
-  <div class="aviso">⚠️ Ao alterar a senha todos os dispositivos precisarão digitar a nova senha.</div>
-  <div class="config-card">
-    <h3>🔑 Senha do Tablet</h3>
-    <div class="cf"><label>Senha atual</label><input type="text" id="senha-index-atual" disabled></div>
-    <div class="cf"><label>Nova senha</label><input type="password" id="nova-senha-index"></div>
-    <div class="cf"><label>Confirmar</label><input type="password" id="conf-senha-index"></div>
-    <button class="btn br" onclick="alterarSenha('index')">💾 Salvar</button>
+  <div class="card" style="max-width:400px">
+    <h2>🔑 Alterar senha do Tablet (index)</h2>
+    <div class="fg" style="flex-direction:column;margin-bottom:12px">
+      <div class="ff"><label>Nova senha</label><input type="password" id="nova-senha-index" placeholder="Nova senha"></div>
+      <div class="ff"><label>Confirmar</label><input type="password" id="conf-senha-index" placeholder="Confirme"></div>
+    </div>
+    <button class="btn br" onclick="alterarSenha('index')">💾 Salvar senha tablet</button>
   </div>
-  <div class="config-card">
-    <h3>🔐 Senha do Admin</h3>
-    <div class="cf"><label>Senha atual</label><input type="text" id="senha-admin-atual" disabled></div>
-    <div class="cf"><label>Nova senha</label><input type="password" id="nova-senha-admin"></div>
-    <div class="cf"><label>Confirmar</label><input type="password" id="conf-senha-admin"></div>
-    <button class="btn br" onclick="alterarSenha('admin')">💾 Salvar</button>
+  <div class="card" style="max-width:400px">
+    <h2>🔑 Alterar senha do Admin</h2>
+    <div class="fg" style="flex-direction:column;margin-bottom:12px">
+      <div class="ff"><label>Nova senha</label><input type="password" id="nova-senha-admin" placeholder="Nova senha"></div>
+      <div class="ff"><label>Confirmar</label><input type="password" id="conf-senha-admin" placeholder="Confirme"></div>
+    </div>
+    <button class="btn br" onclick="alterarSenha('admin')">💾 Salvar senha admin</button>
   </div>
-  <div class="config-card">
-    <h3>🔗 Links</h3>
-    <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px;">
-      <div style="background:#fff;border-radius:8px;padding:10px 14px;border:1.5px solid var(--borda);font-size:.82rem;">📱 Tablet: banguelim.github.io/bambam-ponto/</div>
-      <div style="background:#fff;border-radius:8px;padding:10px 14px;border:1.5px solid var(--borda);font-size:.82rem;">💻 Admin: banguelim.github.io/bambam-ponto/admin.html</div>
-      <div style="background:#fff;border-radius:8px;padding:10px 14px;border:1.5px solid var(--borda);font-size:.82rem;">🪪 QR Codes: banguelim.github.io/bambam-ponto/funcionarios.html</div>
+  <div class="card" style="max-width:400px">
+    <h2>🔗 Links do sistema</h2>
+    <div style="display:flex;flex-direction:column;gap:8px;font-size:.85rem">
+      <a href="index.html" style="color:var(--rosa);font-weight:700">📱 Tablet (ponto)</a>
+      <a href="funcionarios.html" style="color:var(--rosa);font-weight:700">🪪 QR Codes</a>
     </div>
   </div>
 </div>
 
 </main>
 
-<!-- MODAL EDIÇÃO DE REGISTROS -->
-<div class="mo" id="mo-edicao">
-  <div class="md" style="max-width:500px">
-    <h3>✏️ Corrigir registros do dia</h3>
-    <div id="ed-info" style="background:var(--cinza);border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:.82rem;font-weight:600"></div>
-
-    <!-- LISTA DE REGISTROS -->
-    <div style="font-size:.75rem;font-weight:800;color:var(--sub);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">Registros do dia — clique para editar</div>
-    <div id="ed-lista" style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px;max-height:260px;overflow-y:auto"></div>
-
-    <!-- ADICIONAR REGISTRO -->
-    <div style="background:#F0FDF4;border:1.5px solid #86EFAC;border-radius:12px;padding:14px;margin-bottom:14px">
-      <div style="font-size:.78rem;font-weight:800;color:var(--verde);margin-bottom:10px">➕ Adicionar registro manualmente</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;align-items:end">
-        <div class="fi">
-          <label>Coluna</label>
-          <select id="add-coluna" style="padding:8px 10px;border:1.5px solid var(--borda);border-radius:8px;font-family:'Montserrat',sans-serif;font-size:.78rem;background:#fff">
-            <option value="entrada">✅ Entrada</option>
-            <option value="salmoco">🕐 S. Almoço</option>
-            <option value="valmoco">🔄 V. Almoço</option>
-            <option value="saida">🚪 Saída</option>
+<!-- MODAL FUNCIONÁRIO -->
+<div class="mo" id="mo">
+  <div class="mc">
+    <h3>✏️ Editar funcionário</h3>
+    <div class="mf">
+      <div><label>Nome</label><input id="en" style="text-transform:uppercase"></div>
+      <div><label>Cargo</label><input id="ec"></div>
+      <div><label>ID</label><input id="ei2" disabled style="opacity:.5"></div>
+      <div><label>Admissão</label><input type="date" id="ed"></div>
+      <div><label>Meses p/ férias</label><input type="number" id="ef" min="1"></div>
+      <div><label>Desligamento</label><input type="date" id="edesl"></div>
+    </div>
+    <div class="ms">
+      <h4>⏰ Jornada de trabalho</h4>
+      <div class="dias-grid" id="dias-grid"></div>
+    </div>
+    <div class="ms">
+      <h4>📋 Ausências e afastamentos</h4>
+      <div class="fg" style="margin-bottom:8px">
+        <div class="ff"><label>Tipo</label>
+          <select id="aus-tipo">
+            <option>Férias</option><option>Afastamento Doença</option>
+            <option>Licença Maternidade</option><option>Licença Paternidade</option>
+            <option>Atestado</option><option>Folga</option><option>Outro</option>
           </select>
         </div>
-        <div class="fi">
-          <label>Hora</label>
-          <input type="time" id="add-hora" style="padding:8px 10px;border:1.5px solid var(--borda);border-radius:8px;font-family:'Montserrat',sans-serif;font-size:.82rem;width:100%">
+        <div class="ff"><label>Início</label><input type="date" id="aus-inicio"></div>
+        <div class="ff"><label>Fim</label><input type="date" id="aus-fim"></div>
+        <div class="ff" style="flex:2"><label>Observação</label><input id="aus-obs" placeholder="Opcional"></div>
+      </div>
+      <button class="btn bc bsm" onclick="addAusencia()" style="margin-bottom:8px">➕ Adicionar ausência</button>
+      <div id="aus-lista"></div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:16px">
+      <button class="btn br" onclick="salvar()">💾 Salvar</button>
+      <button class="btn bc" onclick="fecharMo()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDIÇÃO REGISTROS -->
+<div class="mo" id="mo-edicao">
+  <div class="mc" style="max-width:480px">
+    <h3>✏️ Editar registros</h3>
+    <div id="ed-info" style="font-size:.85rem;color:var(--sub);margin-bottom:14px"></div>
+    <div id="ed-lista"></div>
+    <div class="ms">
+      <h4>➕ Adicionar registro</h4>
+      <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
+        <div class="ff">
+          <label>Tipo</label>
+          <select id="add-coluna">
+            <option value="entrada">Entrada</option>
+            <option value="salmoco">Saída almoço</option>
+            <option value="valmoco">Volta almoço</option>
+            <option value="saida">Saída</option>
+          </select>
         </div>
-        <button class="btn bv bsm" onclick="adicionarRegCorrigido()" style="height:36px;margin-top:2px">➕ Adicionar</button>
+        <div class="ff"><label>Hora</label><input type="time" id="add-hora"></div>
+        <button class="btn br" onclick="adicionarRegCorrigido()">➕ Adicionar</button>
       </div>
     </div>
-
-    <div style="background:#FEF3C7;border:1.5px solid #FCD34D;border-radius:8px;padding:8px 12px;font-size:.72rem;color:#92400E;font-weight:600;margin-bottom:14px">
-      ⚠️ Correções são registradas com marcação "Admin"
-    </div>
-
-    <div style="text-align:right">
+    <div style="margin-top:16px">
       <button class="btn bc" onclick="fecharEdicao()">Fechar</button>
     </div>
   </div>
 </div>
 
-<!-- MODAL QR CODE -->
+<!-- MODAL QR -->
 <div class="mo" id="mo-qr">
-  <div class="md" style="max-width:340px;text-align:center">
-    <h3>🪪 Crachá / QR Code</h3>
-    <div id="qr-func-info" style="margin-bottom:16px">
-      <div id="qr-func-avatar" style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#FFDCE8,#FFF0F6);border:2px solid var(--borda);margin:0 auto 10px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:900;color:var(--rosa-d)"></div>
-      <div id="qr-func-nome" style="font-size:1rem;font-weight:900;margin-bottom:3px"></div>
-      <div id="qr-func-id" style="font-size:.78rem;color:var(--sub)"></div>
+  <div class="mc" style="max-width:320px;text-align:center">
+    <h3>🪪 Crachá do funcionário</h3>
+    <div class="qr-cracha">
+      <div style="font-size:1.2rem;font-weight:800;color:var(--rosa);margin-bottom:8px">🍼 BAMBAM BABY</div>
+      <div class="qr-av" id="qr-func-avatar"></div>
+      <div id="qr-func-nome" style="font-size:.95rem;font-weight:900;margin-bottom:2px"></div>
+      <div id="qr-func-id" style="font-size:.75rem;color:var(--sub);margin-bottom:12px"></div>
+      <div id="qr-canvas" style="display:flex;justify-content:center"></div>
     </div>
-    <div id="qr-canvas" style="display:flex;justify-content:center;margin-bottom:18px"></div>
-    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
-      <button class="btn br" onclick="imprimirQR()">🖨️ Imprimir crachá</button>
+    <div style="display:flex;gap:8px;justify-content:center">
+      <button class="btn br" onclick="imprimirQR()">🖨️ Imprimir</button>
       <button class="btn bc" onclick="document.getElementById('mo-qr').classList.remove('open')">Fechar</button>
     </div>
   </div>
 </div>
 
-<!-- MODAL FUNCIONÁRIO -->
-<div class="mo" id="mo">
-  <div class="md">
-    <h3>✏️ Editar funcionário</h3>
-    <div class="fg2">
-      <div class="fi" style="grid-column:1/-1"><label>Nome</label><input type="text" id="en" oninput="this.value=this.value.toUpperCase()"></div>
-      <div class="fi"><label>Cargo</label><input type="text" id="ec"></div>
-      <div class="fi"><label>ID</label><input type="text" id="ei2" disabled style="opacity:.5"></div>
-      <div class="fi"><label>Admissão</label><input type="date" id="ed"></div>
-      <div class="fi"><label>Férias após (meses)</label><input type="number" id="ef" value="12" min="1"></div>
-      <div class="fi"><label>Data desligamento (se saiu)</label><input type="date" id="edesl" title="Deixe em branco se ainda ativo"></div>
-    </div>
-
-    <hr class="divider">
-    <h3 style="font-size:.9rem;margin-bottom:8px;">⏰ Jornada por dia da semana</h3>
-    <p style="font-size:.75rem;color:var(--sub);margin-bottom:12px;">Deixe em branco os dias que não trabalha. Adicione os períodos de cada dia.</p>
-    <div class="dias-grid" id="dias-grid"></div>
-
-    <hr class="divider">
-    <h3 style="font-size:.9rem;margin-bottom:12px;">📋 Ausências e afastamentos</h3>
-    <div class="fg2">
-      <div class="fi" style="grid-column:1/-1">
-        <label>Motivo</label>
-        <select id="aus-tipo">
-          <option value="Férias">🏖️ Férias</option>
-          <option value="Afastamento médico">🏥 Afastamento médico</option>
-          <option value="Atestado médico">📋 Atestado médico</option>
-          <option value="Licença maternidade">👶 Licença maternidade</option>
-          <option value="Licença paternidade">👨‍👶 Licença paternidade</option>
-          <option value="Licença luto">🖤 Licença luto</option>
-          <option value="Outro">📌 Outro</option>
-        </select>
-      </div>
-      <div class="fi"><label>Data início</label><input type="date" id="aus-inicio"></div>
-      <div class="fi"><label>Data fim</label><input type="date" id="aus-fim"></div>
-      <div class="fi" style="grid-column:1/-1"><label>Observação</label><input type="text" id="aus-obs" placeholder="Ex: CID B34.2…"></div>
-    </div>
-    <button class="btn bv bsm" style="margin-top:8px;margin-bottom:10px" onclick="addAusencia()">➕ Adicionar ausência</button>
-    <div id="aus-lista"></div>
-
-    <hr class="divider">
-    <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap">
-      <button class="btn bc" onclick="fecharMo()">Cancelar</button>
-      <button class="btn br" onclick="salvar()">💾 Salvar tudo</button>
-    </div>
-  </div>
-</div>
-
 <script type="module">
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getDatabase, ref, onValue, set, remove, get, push } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
@@ -1356,41 +1325,7 @@ function toast(msg){
 setMes();
 setAuditMes();
 checarSenhaAdmin();
+
 </script>
-
-<!-- MODAL EDIÇÃO DE REGISTROS -->
-<div class="mo" id="mo-edicao">
-  <div class="md" style="max-width:520px">
-    <h3>✏️ Editar registros do dia</h3>
-    <div id="edicao-info" style="background:var(--cinza);border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:.82rem;font-weight:600;color:var(--sub)"></div>
-
-    <div id="edicao-lista" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;max-height:280px;overflow-y:auto"></div>
-
-    <div style="background:#F0FDF4;border:1.5px solid #86EFAC;border-radius:10px;padding:14px;margin-bottom:16px">
-      <div style="font-size:.78rem;font-weight:800;color:var(--verde);margin-bottom:10px">➕ Adicionar registro</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;align-items:end">
-        <div class="fi"><label>Tipo</label>
-          <select id="add-tipo" style="padding:8px 10px;border:1.5px solid var(--borda);border-radius:8px;font-family:'Montserrat',sans-serif;font-size:.82rem;background:#fff">
-            <option value="entrada">✅ Entrada</option>
-            <option value="saida">🚪 Saída</option>
-          </select>
-        </div>
-        <div class="fi"><label>Hora</label>
-          <input type="time" id="add-hora-dup" style="padding:8px 10px;border:1.5px solid var(--borda);border-radius:8px;font-family:'Montserrat',sans-serif;font-size:.82rem">
-        </div>
-        <button class="btn bv bsm" onclick="adicionarRegistro()" style="height:38px">➕ Adicionar</button>
-      </div>
-    </div>
-
-    <div style="background:#FEF3C7;border:1.5px solid #FCD34D;border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:.72rem;color:#92400E;font-weight:600">
-      ⚠️ Correções ficam registradas como "Corrigido pelo admin"
-    </div>
-
-    <div style="display:flex;gap:10px;justify-content:flex-end">
-      <button class="btn bc" onclick="fecharEdicao()">Fechar</button>
-    </div>
-  </div>
-</div>
-
 </body>
 </html>
