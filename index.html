@@ -209,6 +209,7 @@ let modoExcecao=false;
 let qrScanner=null;
 let ultimoFrame=null;
 let frameTimer=null;
+let videoRef=null; // referência direta ao elemento video
 
 // ── AUTORIZAÇÃO ──
 async function checarAutorizacao(){
@@ -309,8 +310,21 @@ function iniciarScanner(){
     },
     ()=>{}
   ).then(()=>{
-    // Inicia captura contínua de frames após câmera pronta
-    setTimeout(iniciarCapturaContínua, 2000);
+    // Aguarda vídeo aparecer no DOM e salva referência
+    let tentativas=0;
+    const esperarVideo=setInterval(()=>{
+      const v=document.querySelector('#reader video');
+      if(v&&v.videoWidth>0){
+        clearInterval(esperarVideo);
+        videoRef=v;
+        console.log('📷 Video encontrado! Dimensões:',v.videoWidth,'x',v.videoHeight);
+        const st=document.getElementById('frame-status');
+        if(st) st.textContent='📷 Câmera pronta!';
+        setTimeout(iniciarCapturaContínua,500);
+      }
+      tentativas++;
+      if(tentativas>20) clearInterval(esperarVideo);
+    },500);
   }).catch(()=>{
     document.getElementById('reader').innerHTML='<p style="color:var(--sub);padding:20px;text-align:center;font-size:.85rem">📵 Câmera não disponível.</p>';
   });
@@ -323,26 +337,26 @@ function iniciarCapturaContínua(){
 
 function capturarFrame(){
   try{
-    // Tenta diferentes seletores para encontrar o vídeo
-    let video=document.querySelector('#reader video');
-    if(!video) video=document.querySelector('#reader__dashboard_section_swaplink ~ div video');
-    if(!video) video=document.querySelector('video[playsinline]');
-    if(!video) video=document.querySelector('video');
+    // Usa referência direta salva quando câmera iniciou
+    const video=videoRef||document.querySelector('#reader video')||document.querySelector('video');
     const st=document.getElementById('frame-status');
-    if(!video){if(st)st.textContent='❌ Nenhum video encontrado';return;}
-    if(!video.videoWidth||video.videoWidth===0){if(st)st.textContent='⚠️ Video sem dimensões ainda';return;}
+    if(!video){if(st)st.textContent='❌ Video não encontrado';return;}
+    if(!video.videoWidth||video.videoWidth===0){if(st)st.textContent='⚠️ Aguardando câmera…';return;}
+    // Reduz tamanho para máx 200x150 para economizar espaço
     const canvas=document.getElementById('canvas-foto');
-    canvas.width=video.videoWidth;
-    canvas.height=video.videoHeight;
-    canvas.getContext('2d').drawImage(video,0,0);
-    const f=canvas.toDataURL('image/jpeg',0.45);
-    if(f&&f.length>8000){
+    const maxW=200, maxH=150;
+    const ratio=Math.min(maxW/video.videoWidth, maxH/video.videoHeight);
+    canvas.width=Math.round(video.videoWidth*ratio);
+    canvas.height=Math.round(video.videoHeight*ratio);
+    canvas.getContext('2d').drawImage(video,0,0,canvas.width,canvas.height);
+    // Qualidade baixa = arquivo pequeno (~5-10KB)
+    const f=canvas.toDataURL('image/jpeg',0.3);
+    const st=document.getElementById('frame-status');
+    if(f&&f.length>3000){
       ultimoFrame=f;
-      const st=document.getElementById('frame-status');
-      if(st) st.textContent='📸 Frame OK ('+Math.round(f.length/1024)+'KB)';
+      if(st) st.textContent='📸 Frame OK! '+Math.round(f.length/1024)+'KB — '+canvas.width+'x'+canvas.height;
     } else {
-      const st=document.getElementById('frame-status');
-      if(st) st.textContent='⚠️ Frame pequeno: '+(f?.length||0)+' bytes';
+      if(st) st.textContent='⚠️ Frame muito pequeno: '+(f?.length||0)+' bytes';
     }
   }catch(e){
     const st=document.getElementById('frame-status');
@@ -519,16 +533,25 @@ window.confirmarPonto=async function(){
   // Salva foto
   if(ultimoFrame){
     const chave=f.id+'_'+Date.now();
-    set(ref(db,'fotos_auditoria/'+dh()+'/'+chave),{
-      empId:f.id,nome:f.nome,tipo:tipoEsc,
+    const fotoData={
+      empId:f.id, nome:f.nome, tipo:tipoEsc,
       foto:ultimoFrame,
       hora:agora.toLocaleTimeString('pt-BR'),
       timestamp:agora.toISOString()
-    }).then(()=>console.log('📸 Foto salva!'))
-      .catch(e=>console.log('❌ Erro foto:',e));
+    };
+    set(ref(db,'fotos_auditoria/'+dh()+'/'+chave),fotoData)
+      .then(()=>{
+        console.log('📸 Foto salva no Firebase!');
+        mostrarToast('📸 Foto registrada!','#98C379');
+      })
+      .catch(e=>{
+        console.log('❌ Erro ao salvar foto:',e);
+        mostrarToast('📸 Sem foto — ponto salvo!','#E5C07B');
+      });
     ultimoFrame=null;
   } else {
-    console.log('⚠️ Sem frame para salvar');
+    console.log('⚠️ Sem frame — ponto salvo sem foto');
+    mostrarToast('📸 Sem foto capturada','#E5C07B');
   }
 
   if(modoExcecao){
