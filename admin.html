@@ -906,6 +906,7 @@ window.setFiltroFunc=function(filtro,btn){
 };
 
 window.renderF=function(){
+  preencherSelectAudit();
   const b=(document.getElementById('bf')?.value||'').toLowerCase();
   const hoje=dh();
   let fl=funcs.filter(f=>f.nome.toLowerCase().includes(b)||f.id.toLowerCase().includes(b));
@@ -1243,37 +1244,104 @@ document.getElementById('mo-qr').addEventListener('click',function(e){if(e.targe
 
 
 // ── AUDITORIA DE FOTOS ──
+// Preenche select de funcionários na aba auditoria
+function preencherSelectAudit(){
+  const sel=document.getElementById('audit-func');
+  if(!sel||sel.options.length>1) return;
+  funcs.filter(f=>!f.desligamento||f.desligamento>=dh()).forEach(f=>{
+    const opt=document.createElement('option');
+    opt.value=f.id; opt.textContent=f.nome.split(' ').slice(0,2).join(' ')+' ('+f.id+')';
+    sel.appendChild(opt);
+  });
+}
+
+window.setAuditHoje=function(){
+  const h=dh();
+  document.getElementById('audit-di').value=h;
+  document.getElementById('audit-df').value=h;
+};
+window.setAuditMes=function(){
+  const hj=new Date();
+  const ini=new Date(hj.getFullYear(),hj.getMonth(),1);
+  document.getElementById('audit-di').value=ini.toISOString().split('T')[0];
+  document.getElementById('audit-df').value=dh();
+};
+
 window.buscarFotos=async function(){
-  const data=document.getElementById('audit-data').value;
-  if(!data){alert('⚠️ Selecione uma data.');return;}
+  const di=document.getElementById('audit-di').value;
+  const df=document.getElementById('audit-df').value;
+  const filtroFunc=document.getElementById('audit-func').value;
+  if(!di||!df){alert('⚠️ Selecione o período.');return;}
+  if(di>df){alert('⚠️ Data inicial maior que final.');return;}
   const grid=document.getElementById('audit-grid');
   grid.innerHTML='<div class="lt"><div class="sp2"></div>Buscando…</div>';
   try{
-  const snap=await get(ref(db,'fotos_auditoria/'+data));
-  if(!snap.exists()||!snap.val()){
-    grid.innerHTML='<div class="em"><div class="ic">📸</div>Nenhuma foto registrada neste dia.<br><span style="font-size:.75rem;color:var(--sub)">As fotos são tiradas quando o funcionário confirma o ponto.</span></div>';
+  // Busca todas as datas do período
+  const datas=[];
+  const c=new Date(di+'T12:00:00'),e=new Date(df+'T12:00:00');
+  while(c<=e){datas.push(c.toISOString().split('T')[0]);c.setDate(c.getDate()+1);}
+
+  const snaps=await Promise.all(datas.map(d=>get(ref(db,'fotos_auditoria/'+d))));
+  let todasFotos=[];
+  snaps.forEach((snap,i)=>{
+    if(!snap.exists()||!snap.val()) return;
+    Object.values(snap.val()).forEach(f=>{
+      todasFotos.push({...f,data:datas[i]});
+    });
+  });
+
+  // Filtra por funcionário se selecionado
+  if(filtroFunc) todasFotos=todasFotos.filter(f=>f.empId===filtroFunc);
+
+  if(!todasFotos.length){
+    grid.innerHTML='<div class="em"><div class="ic">📸</div>Nenhuma foto no período selecionado.</div>';
     return;
   }
+
   // Ordena por hora
-  const fotos=Object.values(snap.val()).sort((a,b)=>a.hora.localeCompare(b.hora));
+  todasFotos.sort((a,b)=>a.data!==b.data?a.data.localeCompare(b.data):a.hora.localeCompare(b.hora));
   const tipoLabel={entrada:'✅ Entrada',saida:'🚪 Saída',salmoco:'🕐 S.Almoço',valmoco:'🔄 V.Almoço'};
   const tipoColor={entrada:'#F0FDF4',saida:'#FFF0F6',salmoco:'#FFF7ED',valmoco:'#EFF6FF'};
   const tipoBorda={entrada:'#86EFAC',saida:'#FECDD3',salmoco:'#FDBA74',valmoco:'#93C5FD'};
-  grid.innerHTML=fotos.map(f=>`
-    <div style="background:${tipoColor[f.tipo]||'#F8FAFC'};border:1.5px solid ${tipoBorda[f.tipo]||'#E5E7EB'};border-radius:12px;overflow:hidden;text-align:center">
-      <img src="${f.foto}" style="width:100%;height:150px;object-fit:cover;display:block"
-        onerror="this.parentElement.querySelector('.no-foto').style.display='flex';this.style.display='none'">
-      <div class="no-foto" style="display:none;width:100%;height:150px;align-items:center;justify-content:center;background:#F3F4F6;font-size:2rem">👤</div>
-      <div style="padding:8px 10px">
-        <div style="font-size:.8rem;font-weight:900;color:var(--texto)">${f.nome.split(' ')[0]}</div>
-        <div style="font-size:.72rem;font-weight:700;margin:2px 0">${tipoLabel[f.tipo]||f.tipo||''}</div>
-        <div style="font-size:.7rem;color:var(--sub)">${f.hora}</div>
-        <div style="font-size:.65rem;color:var(--sub)">🪪 ${f.empId}</div>
+
+  // Agrupa por funcionário
+  const porFunc={};
+  todasFotos.forEach(f=>{
+    if(!porFunc[f.empId]) porFunc[f.empId]={nome:f.nome,empId:f.empId,fotos:[]};
+    porFunc[f.empId].fotos.push(f);
+  });
+
+  const funcsOrdenados=Object.values(porFunc).sort((a,b)=>a.nome.localeCompare(b.nome));
+  const totalFotos=todasFotos.length;
+  const periodo=di===df?di.split('-').reverse().join('/'): di.split('-').reverse().join('/')+' a '+df.split('-').reverse().join('/');
+
+  grid.innerHTML=`<div style="font-size:.8rem;color:var(--sub);margin-bottom:16px;font-weight:600">📅 ${periodo} · ${totalFotos} foto(s) · ${funcsOrdenados.length} funcionário(s)</div>`+
+  funcsOrdenados.map(func=>`
+    <div style="background:#fff;border:1.5px solid var(--borda);border-radius:16px;padding:16px;margin-bottom:12px">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;padding-bottom:10px;border-bottom:1.5px solid var(--borda)">
+        <div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#FFDCE8,#FFF0F6);border:2px solid var(--borda);display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:900;color:var(--rosa-d);flex-shrink:0">
+          ${func.nome.trim().split(' ').map(p=>p[0]).slice(0,2).join('').toUpperCase()}
+        </div>
+        <div>
+          <div style="font-size:.95rem;font-weight:900;color:var(--texto)">${func.nome.split(' ').slice(0,2).join(' ')}</div>
+          <div style="font-size:.72rem;color:var(--sub)">🪪 ${func.empId} · ${func.fotos.length} foto(s)</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px">
+        ${func.fotos.map(f=>`
+          <div style="background:${tipoColor[f.tipo]||'#F8FAFC'};border:1.5px solid ${tipoBorda[f.tipo]||'#E5E7EB'};border-radius:10px;overflow:hidden;text-align:center">
+            <img src="${f.foto||''}" style="width:100%;height:100px;object-fit:cover;display:block"
+              onerror="this.style.display='none'">
+            <div style="padding:5px 6px">
+              <div style="font-size:.72rem;font-weight:800">${tipoLabel[f.tipo]||''}</div>
+              <div style="font-size:.68rem;color:var(--sub)">${f.data?f.data.split('-').reverse().join('/'):''}  ${f.hora||''}</div>
+            </div>
+          </div>`).join('')}
       </div>
     </div>`).join('');
+
   }catch(e){
-    grid.innerHTML='<div class="em"><div class="ic">❌</div>Erro ao carregar fotos. Verifique a conexão.</div>';
-    console.log('Erro auditoria:',e);
+    grid.innerHTML='<div class="em"><div class="ic">❌</div>Erro ao carregar. Verifique conexão.</div>';
   }
 };
 
@@ -1286,7 +1354,7 @@ function toast(msg){
 }
 
 setMes();
-document.getElementById('audit-data').value=new Date().toISOString().split('T')[0];
+setAuditMes();
 checarSenhaAdmin();
 </script>
 
