@@ -331,8 +331,12 @@ tr:hover td{filter:brightness(.97);}
     <button class="btn br" onclick="addFeriado()">➕ Adicionar</button>
   </div>
   <div class="card">
-    <h2>📅 Feriados cadastrados</h2>
-    <div id="fer-lista"></div>
+    <h2>🇧🇷 Feriados nacionais</h2>
+    <div id="lista-nacionais" class="fer-list"></div>
+  </div>
+  <div class="card">
+    <h2>📅 Feriados locais cadastrados</h2>
+    <div id="lista-locais" class="fer-list"></div>
   </div>
 </div>
 
@@ -341,6 +345,7 @@ tr:hover td{filter:brightness(.97);}
   <div class="card" style="max-width:400px">
     <h2>🔑 Alterar senha do Tablet (index)</h2>
     <div class="fg" style="flex-direction:column;margin-bottom:12px">
+      <div class="ff"><label>Senha atual</label><input type="text" id="senha-index-atual" disabled style="opacity:.6"></div>
       <div class="ff"><label>Nova senha</label><input type="password" id="nova-senha-index" placeholder="Nova senha"></div>
       <div class="ff"><label>Confirmar</label><input type="password" id="conf-senha-index" placeholder="Confirme"></div>
     </div>
@@ -349,6 +354,7 @@ tr:hover td{filter:brightness(.97);}
   <div class="card" style="max-width:400px">
     <h2>🔑 Alterar senha do Admin</h2>
     <div class="fg" style="flex-direction:column;margin-bottom:12px">
+      <div class="ff"><label>Senha atual</label><input type="text" id="senha-admin-atual" disabled style="opacity:.6"></div>
       <div class="ff"><label>Nova senha</label><input type="password" id="nova-senha-admin" placeholder="Nova senha"></div>
       <div class="ff"><label>Confirmar</label><input type="password" id="conf-senha-admin" placeholder="Confirme"></div>
     </div>
