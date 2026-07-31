@@ -509,22 +509,41 @@ window.confirmarPonto=async function(){
     const fotoParaSalvar=ultimoFrame;
     ultimoFrame=null;
     const chave=f.id+'_'+Date.now();
-    const fotoData={
+    const tamanhoKB=Math.round(fotoParaSalvar.length/1024);
+    
+    // Comprime mais se for grande (>50KB)
+    let fotoFinal=fotoParaSalvar;
+    if(tamanhoKB>50){
+      try{
+        const c=document.getElementById('canvas-foto');
+        // Reduz ainda mais
+        const ctx=c.getContext('2d');
+        const img=new Image();
+        img.src=fotoParaSalvar;
+        c.width=160; c.height=120;
+        ctx.drawImage(img,0,0,160,120);
+        fotoFinal=c.toDataURL('image/jpeg',0.25);
+      }catch(ex){}
+    }
+
+    set(ref(db,'fotos_auditoria/'+dh()+'/'+chave),{
       empId:f.id,
       nome:f.nome,
       tipo:tipoEsc,
-      foto:fotoParaSalvar,
+      foto:fotoFinal,
       hora:agora.toLocaleTimeString('pt-BR'),
       timestamp:agora.toISOString()
-    };
-    set(ref(db,'fotos_auditoria/'+dh()+'/'+chave),fotoData)
-      .then(()=>{
-        mostrarToast('📸 Foto salva!','#98C379');
-      })
-      .catch(e=>{
-        mostrarToast('⚠️ Erro foto: '+e.message,'#ff4d6d');
-        console.error('Erro ao salvar foto:',e);
-      });
+    }).then(()=>{
+      mostrarToast('📸 Foto salva! ('+Math.round(fotoFinal.length/1024)+'KB)','#98C379');
+    }).catch(e=>{
+      // Tenta salvar só os dados sem foto para confirmar conectividade
+      set(ref(db,'fotos_auditoria/'+dh()+'/'+chave+'_sem_foto'),{
+        empId:f.id, nome:f.nome, tipo:tipoEsc,
+        hora:agora.toLocaleTimeString('pt-BR'),
+        erro:'foto_grande_'+tamanhoKB+'KB_'+e.code
+      }).then(()=>mostrarToast('⚠️ Foto grande ('+tamanhoKB+'KB) — dados salvos sem foto','#E5C07B'))
+        .catch(e2=>mostrarToast('❌ Erro Firebase: '+e2.message,'#ff4d6d'));
+    });
   }
 
   if(modoExcecao){
