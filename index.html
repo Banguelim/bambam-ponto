@@ -146,7 +146,6 @@ header h1{font-family:'Baloo 2',cursive;font-size:1.5rem;color:#fff;}
         📋 INICIAR REGISTRO
       </button>
       <div id="status-foto"></div>
-      <img id="foto-preview-mini" style="display:none;width:80px;height:60px;object-fit:cover;border-radius:8px;margin-top:8px;border:2px solid var(--verde)">
     </div>
   </div>
 
@@ -348,25 +347,19 @@ window.iniciarRegistro=function(){
       const foto=c.toDataURL('image/jpeg',0.4);
       if(foto&&foto.length>3000){
         ultimoFrame=foto;
-        statusEl.textContent='📸 Foto capturada ('+Math.round(foto.length/1024)+'KB) — leia o crachá!';
+        statusEl.textContent='📸 Foto capturada — leia o crachá!';
         statusEl.style.color='var(--verde)';
-        // Mostra miniatura
-        const mini=document.getElementById('foto-preview-mini');
-        mini.src=foto; mini.style.display='block';
       } else {
-        statusEl.textContent='⚠️ Frame vazio ('+foto.length+' bytes) — video: '+v.videoWidth+'x'+v.videoHeight;
-        statusEl.style.color='#ff4d6d';
-        document.getElementById('foto-preview-mini').style.display='none';
+        statusEl.textContent='⚠️ Sem foto — leia o crachá mesmo assim';
+        statusEl.style.color='var(--sub)';
       }
     } else {
-      const v2=videoRef||document.querySelector('#reader video')||document.querySelector('video');
-      statusEl.textContent=v2?'⚠️ Video sem dimensões: '+v2.videoWidth+'x'+v2.videoHeight:'❌ Video não encontrado';
-      statusEl.style.color='#ff4d6d';
-      document.getElementById('foto-preview-mini').style.display='none';
+      statusEl.textContent='🪪 Leia o crachá';
+      statusEl.style.color='var(--sub)';
     }
   }catch(e){
-    statusEl.textContent='❌ Erro: '+e.message;
-    statusEl.style.color='#ff4d6d';
+    statusEl.textContent='🪪 Leia o crachá';
+    statusEl.style.color='var(--sub)';
   }
 
   // Ativa modo aguardando QR
@@ -481,7 +474,6 @@ window.fecharModal=function(){
   funcSel=null; tipoEsc=null;
   ultimoFrame=null;
   document.getElementById('status-foto').textContent='';
-  document.getElementById('foto-preview-mini').style.display='none';
   document.getElementById('btn-iniciar').textContent='📋 INICIAR REGISTRO';
   document.getElementById('btn-iniciar').style.background='linear-gradient(135deg,var(--verde),#56d275)';
 };
@@ -525,7 +517,6 @@ window.confirmarPonto=async function(){
   const nome=doisNomes(f.nome), tipo=tipoEsc, hora=agora.toLocaleTimeString('pt-BR');
   document.getElementById('modal').classList.remove('open');
   document.getElementById('status-foto').textContent='';
-  document.getElementById('foto-preview-mini').style.display='none';
   document.getElementById('btn-iniciar').textContent='📋 INICIAR REGISTRO';
   document.getElementById('btn-iniciar').style.background='linear-gradient(135deg,var(--verde),#56d275)';
   funcSel=null; tipoEsc=null;
