@@ -506,14 +506,25 @@ window.confirmarPonto=async function(){
 
   // Salva foto capturada no INICIAR
   if(ultimoFrame){
+    const fotoParaSalvar=ultimoFrame;
+    ultimoFrame=null;
     const chave=f.id+'_'+Date.now();
-    set(ref(db,'fotos_auditoria/'+dh()+'/'+chave),{
-      empId:f.id, nome:f.nome, tipo:tipoEsc,
-      foto:ultimoFrame,
+    const fotoData={
+      empId:f.id,
+      nome:f.nome,
+      tipo:tipoEsc,
+      foto:fotoParaSalvar,
       hora:agora.toLocaleTimeString('pt-BR'),
       timestamp:agora.toISOString()
-    }).catch(()=>{});
-    ultimoFrame=null;
+    };
+    set(ref(db,'fotos_auditoria/'+dh()+'/'+chave),fotoData)
+      .then(()=>{
+        mostrarToast('📸 Foto salva!','#98C379');
+      })
+      .catch(e=>{
+        mostrarToast('⚠️ Erro foto: '+e.message,'#ff4d6d');
+        console.error('Erro ao salvar foto:',e);
+      });
   }
 
   if(modoExcecao){
