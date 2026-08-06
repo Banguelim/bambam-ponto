@@ -57,14 +57,14 @@ header h1{font-family:'Baloo 2',cursive;font-size:1.5rem;color:#fff;}
 
 #status-foto{text-align:center;font-size:.85rem;color:var(--sub);margin-top:6px;font-weight:700;min-height:20px;}
 
-.excecao-wrap{display:flex;padding:0 4px;}
-#btn-excecao{padding:10px 20px;border:none;border-radius:30px;background:#E5C07B33;border:1.5px solid #E5C07B88;color:#E5C07B;font-family:'Nunito',sans-serif;font-size:.9rem;font-weight:800;cursor:pointer;}
-#btn-excecao.ativo{background:#ff4d6d33;border-color:#ff4d6d;color:#ff4d6d;}
+
 
 #log-list{list-style:none;display:flex;flex-direction:column;gap:8px;max-height:160px;overflow-y:auto;}
 #log-list li{background:var(--card2);border-radius:10px;padding:10px 14px;font-size:.9rem;display:flex;justify-content:space-between;align-items:center;}
 
 #admin-btn{position:fixed;bottom:20px;right:20px;background:var(--card2);border:1.5px solid var(--roxo);border-radius:50px;padding:11px 20px;color:var(--roxo);font-weight:800;font-size:.85rem;cursor:pointer;}
+#btn-excecao{position:fixed;top:70px;right:12px;z-index:50;padding:8px 14px;border:none;border-radius:30px;background:#E5C07B33;border:1.5px solid #E5C07B88;color:#E5C07B;font-family:'Nunito',sans-serif;font-size:.8rem;font-weight:800;cursor:pointer;backdrop-filter:blur(4px);}
+#btn-excecao.ativo{background:#ff4d6d44;border-color:#ff4d6d;color:#ff4d6d;}
 
 /* MODAL */
 .modal-overlay{display:none;position:fixed;inset:0;background:#000c;z-index:200;align-items:center;justify-content:center;padding:20px;}
@@ -150,10 +150,6 @@ header h1{font-family:'Baloo 2',cursive;font-size:1.5rem;color:#fff;}
     </div>
   </div>
 
-  <div class="excecao-wrap">
-    <button id="btn-excecao" onclick="toggleExcecao()">⚠️ Exceção</button>
-  </div>
-
   <div class="card">
     <h2>📋 Registros de hoje</h2>
     <ul id="log-list"><li style="color:var(--sub);padding:8px">Nenhum registro ainda.</li></ul>
@@ -161,6 +157,8 @@ header h1{font-family:'Baloo 2',cursive;font-size:1.5rem;color:#fff;}
 </div>
 
 <button id="admin-btn" onclick="location.href='admin.html'">⚙️ Admin</button>
+
+<button id="btn-excecao" onclick="toggleExcecao()">⚠️ Exceção</button>
 
 <div class="modal-overlay" id="modal">
   <div class="modal">
