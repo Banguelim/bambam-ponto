@@ -611,6 +611,30 @@ function calcHoras(entrada,sAlmoco,vAlmoco,saida){
   }catch{return '';}
 }
 
+function calcHorasExtras(entrada,sAlmoco,vAlmoco,saida,jornada){
+  // Jornada deve existir e ter períodos
+  if(!entrada||!saida||!jornada||!jornada.length) return '';
+  try{
+    // Horas trabalhadas em minutos
+    let trabalhado=toMin(saida)-toMin(entrada);
+    if(trabalhado<=0) return '';
+    if(sAlmoco&&vAlmoco){const iv=toMin(vAlmoco)-toMin(sAlmoco);if(iv>0)trabalhado-=iv;}
+    if(trabalhado<=0) return '';
+
+    // Horas previstas na jornada em minutos
+    let previsto=0;
+    jornada.forEach(p=>{
+      const dur=toMin(p.saida)-toMin(p.entrada);
+      if(dur>0) previsto+=dur;
+    });
+    if(previsto<=0) return '';
+
+    const extra=trabalhado-previsto;
+    if(extra<=0) return ''; // não houve hora extra
+    return `+${String(Math.floor(extra/60)).padStart(2,'0')}:${String(extra%60).padStart(2,'0')}`;
+  }catch{return '';}
+}
+
 window.setHoje=()=>{const h=dh();document.getElementById('di').value=h;document.getElementById('df').value=h;};
 window.setSemana=()=>{const hj=new Date(),d=hj.getDay(),s=new Date(hj);s.setDate(hj.getDate()-(d===0?6:d-1));document.getElementById('di').value=s.toISOString().split('T')[0];document.getElementById('df').value=dh();};
 window.setMes=()=>{const hj=new Date(),i=new Date(hj.getFullYear(),hj.getMonth(),1);document.getElementById('di').value=i.toISOString().split('T')[0];document.getElementById('df').value=dh();};
@@ -765,9 +789,10 @@ window.buscar=async function(){
         ocFinal=ocorrencia||'Falta';
       }
 
+      const horasExtras=calcHorasExtras(entrada,sAlmoco,vAlmoco,saida,jornada);
       dadosCons.push({
         empId:f.id,nome:f.nome,cargo:f.cargo||'',data,diaNome,diaCurto,
-        entrada,sAlmoco,vAlmoco,saida,horas,
+        entrada,sAlmoco,vAlmoco,saida,horas,horasExtras,jornada,
         excEntradas,excSaidas,temExcecao,
         ocorrencia:ocFinal,ausencia,tipoLinha,
         statusD:statusD?.desc||''
@@ -783,7 +808,13 @@ window.buscar=async function(){
 
   const res=document.getElementById('resumo');
   res.style.display='flex';
-  res.innerHTML=`<span>📅 <strong>${fd(di)} a ${fd(df)}</strong></span><span>Total: <strong>${dadosCons.length}</strong></span><span>✅ Presenças: <strong>${dadosCons.filter(r=>r.tipoLinha==='ln'&&r.entrada).length}</strong></span><span>❌ Faltas: <strong>${dadosCons.filter(r=>r.tipoLinha==='lf').length}</strong></span><span>⚠️ Exceções: <strong>${dadosCons.filter(r=>r.temExcecao).length}</strong></span>`;
+  const totalHE=dadosCons.reduce((acc,r)=>{
+    if(!r.horasExtras) return acc;
+    const m=parseInt(r.horasExtras.replace('+','').split(':')[0])*60+parseInt(r.horasExtras.split(':')[1]);
+    return acc+m;
+  },0);
+  const totalHEStr=totalHE>0?`+${String(Math.floor(totalHE/60)).padStart(2,'0')}:${String(totalHE%60).padStart(2,'0')}`:'—';
+  res.innerHTML=`<span>📅 <strong>${fd(di)} a ${fd(df)}</strong></span><span>Total: <strong>${dadosCons.length}</strong></span><span>✅ Presenças: <strong>${dadosCons.filter(r=>r.tipoLinha==='ln'&&r.entrada).length}</strong></span><span>❌ Faltas: <strong>${dadosCons.filter(r=>r.tipoLinha==='lf').length}</strong></span><span>⚠️ Exceções: <strong>${dadosCons.filter(r=>r.temExcecao).length}</strong></span><span style="color:#D97706;font-weight:800">⏱️ H.Extras: <strong>${totalHEStr}</strong></span>`;
 
   if(!dadosCons.length){document.getElementById('rc').innerHTML='<div class="em"><div class="ic">📋</div>Nenhum registro.</div>';return;}
 
@@ -799,7 +830,7 @@ window.buscar=async function(){
     <thead><tr>
       <th>ID</th><th class="sn">Funcionário</th><th>Dia</th><th>Data</th>
       <th>Entrada</th><th>S.Almoço</th><th>V.Almoço</th><th>Saída</th>
-      ${excHeaders}<th>Horas</th>
+      ${excHeaders}<th>Horas</th><th>H. Extra</th>
       <th class="so">Ocorrência ✏️</th>
     </tr></thead>
     <tbody>${dadosCons.map((r,idx)=>{
@@ -816,6 +847,7 @@ window.buscar=async function(){
         <td class="${r.vAlmoco?'hora':'vazio'}">${r.vAlmoco||'—'}</td>
         <td class="${r.saida?'hora':'vazio'}">${r.saida||'—'}</td>
         ${excCols}<td class="${r.horas?'horas':'vazio'}">${r.horas||'—'}</td>
+        <td class="${r.horasExtras?'':'vazio'}" style="${r.horasExtras?'font-family:monospace;font-weight:900;color:#D97706':''}">\${r.horasExtras||'—'}</td>
         <td class="so" style="display:flex;gap:6px;align-items:center">
           <select class="os ${cm[r.ocorrencia]||'normal'}" onchange="salvarOc('${r.empId}','${r.data}',this.value,this,${idx})">${opts.map(o=>`<option ${o===r.ocorrencia?'selected':''}>${o}</option>`).join('')}</select>
           <button onclick="abrirEdicao('${r.empId}','${r.data}','${r.nome}')" style="padding:4px 8px;border:1.5px solid #93C5FD;border-radius:7px;background:#EFF6FF;color:#1D4ED8;cursor:pointer;font-size:.72rem;font-weight:700;white-space:nowrap">✏️ Editar</button>
@@ -848,6 +880,7 @@ window.exportar=function(){
   for(let i=0;i<maxExcE;i++) cab.push(`Exc.Entrada ${i+1}`);
   for(let i=0;i<maxExcS;i++) cab.push(`Exc.Saída ${i+1}`);
   cab.push('Horas Trabalhadas');
+  cab.push('Horas Extras');
   cab.push('Ocorrência');
 
   const linhas=[cab];
@@ -856,6 +889,7 @@ window.exportar=function(){
     for(let i=0;i<maxExcE;i++) row.push(r.excEntradas[i]||'');
     for(let i=0;i<maxExcS;i++) row.push(r.excSaidas[i]||'');
     row.push(r.horas||'');
+    row.push(r.horasExtras||'');
     row.push(r.ocorrencia||'Normal');
     linhas.push(row);
   });
