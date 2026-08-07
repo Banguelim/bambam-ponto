@@ -689,7 +689,10 @@ window.buscar=async function(){
   dadosCons=[];
 
   // Funcionários ativos no período (considera data de desligamento)
-  const funcsAtivos=funcs.filter(f=>!f.desligamento||f.desligamento>=di);
+  // Aplica filtro de funcionário se selecionado
+  const filtroSel=document.getElementById('ff-func')?.value||'';
+  let funcsAtivos=funcs.filter(f=>!f.desligamento||f.desligamento>=di);
+  if(filtroSel) funcsAtivos=funcsAtivos.filter(f=>f.id===filtroSel);
 
   datas.forEach(data=>{
     const statusD=statusDia(data);
@@ -907,15 +910,23 @@ window.exportar=function(){
 };
 
 // ── FUNCIONÁRIOS ──
-window.setFiltroFunc=function(filtro,btn){
-  filtroFunc=filtro;
-  document.querySelectorAll('.filtro-func button').forEach(b=>b.classList.remove('ativo'));
-  btn.classList.add('ativo');
-  renderF();
+window.setFiltroFunc=function(filtro){
+  // Apenas armazena - buscar() vai usar quando chamado
+  filtroFuncReg=filtro;
 };
 
 window.renderF=function(){
   preencherSelectAudit();
+  // Preenche filtro de funcionário nos registros
+  const ffFunc=document.getElementById('ff-func');
+  if(ffFunc&&ffFunc.options.length<=1){
+    funcs.filter(f=>!f.desligamento||f.desligamento>=dh()).forEach(f=>{
+      const opt=document.createElement('option');
+      opt.value=f.id;
+      opt.textContent=f.nome.split(' ').slice(0,2).join(' ')+' ('+f.id+')';
+      ffFunc.appendChild(opt);
+    });
+  }
   const b=(document.getElementById('bf')?.value||'').toLowerCase();
   const hoje=dh();
   let fl=funcs.filter(f=>f.nome.toLowerCase().includes(b)||f.id.toLowerCase().includes(b));
