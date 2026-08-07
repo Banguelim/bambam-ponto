@@ -847,7 +847,7 @@ window.buscar=async function(){
         <td class="${r.vAlmoco?'hora':'vazio'}">${r.vAlmoco||'—'}</td>
         <td class="${r.saida?'hora':'vazio'}">${r.saida||'—'}</td>
         ${excCols}<td class="${r.horas?'horas':'vazio'}">${r.horas||'—'}</td>
-        <td class="${r.horasExtras?'':'vazio'}" style="${r.horasExtras?'font-family:monospace;font-weight:900;color:#D97706':''}">\${r.horasExtras||'—'}</td>
+        <td class="${r.horasExtras?'':'vazio'}" style="${r.horasExtras?'font-family:monospace;font-weight:900;color:#D97706':''}">${r.horasExtras||'—'}</td>
         <td class="so" style="display:flex;gap:6px;align-items:center">
           <select class="os ${cm[r.ocorrencia]||'normal'}" onchange="salvarOc('${r.empId}','${r.data}',this.value,this,${idx})">${opts.map(o=>`<option ${o===r.ocorrencia?'selected':''}>${o}</option>`).join('')}</select>
           <button onclick="abrirEdicao('${r.empId}','${r.data}','${r.nome}')" style="padding:4px 8px;border:1.5px solid #93C5FD;border-radius:7px;background:#EFF6FF;color:#1D4ED8;cursor:pointer;font-size:.72rem;font-weight:700;white-space:nowrap">✏️ Editar</button>
