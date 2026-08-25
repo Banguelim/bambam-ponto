@@ -811,13 +811,52 @@ window.buscar=async function(){
 
   const res=document.getElementById('resumo');
   res.style.display='flex';
-  const totalHE=dadosCons.reduce((acc,r)=>{
-    if(!r.horasExtras) return acc;
-    const m=parseInt(r.horasExtras.replace('+','').split(':')[0])*60+parseInt(r.horasExtras.split(':')[1]);
-    return acc+m;
-  },0);
-  const totalHEStr=totalHE>0?`+${String(Math.floor(totalHE/60)).padStart(2,'0')}:${String(totalHE%60).padStart(2,'0')}`:'—';
-  res.innerHTML=`<span>📅 <strong>${fd(di)} a ${fd(df)}</strong></span><span>Total: <strong>${dadosCons.length}</strong></span><span>✅ Presenças: <strong>${dadosCons.filter(r=>r.tipoLinha==='ln'&&r.entrada).length}</strong></span><span>❌ Faltas: <strong>${dadosCons.filter(r=>r.tipoLinha==='lf').length}</strong></span><span>⚠️ Exceções: <strong>${dadosCons.filter(r=>r.temExcecao).length}</strong></span><span style="color:#D97706;font-weight:800">⏱️ H.Extras: <strong>${totalHEStr}</strong></span>`;
+  // Totais de horas
+  let totalHE=0, totalTrab=0, totalCont=0, totalFalta=0;
+  dadosCons.forEach(r=>{
+    // H. Extras
+    if(r.horasExtras){
+      const m=parseInt(r.horasExtras.replace('+','').split(':')[0])*60+parseInt(r.horasExtras.split(':')[1]);
+      totalHE+=m;
+    }
+    // H. Trabalhadas
+    if(r.horas){
+      const p=r.horas.split(':');
+      totalTrab+=parseInt(p[0])*60+parseInt(p[1]);
+    }
+    // H. Contratadas (soma da jornada do dia)
+    if(r.jornada&&r.jornada.length&&r.tipoLinha!=='lf'){
+      r.jornada.forEach(p=>{
+        const dur=toMin(p.saida)-toMin(p.entrada);
+        if(dur>0) totalCont+=dur;
+      });
+    }
+    // H. Falta (dias com falta e ausência não justificada)
+    if(r.tipoLinha==='lf'&&r.jornada&&r.jornada.length){
+      r.jornada.forEach(p=>{
+        const dur=toMin(p.saida)-toMin(p.entrada);
+        if(dur>0) totalFalta+=dur;
+      });
+    }
+  });
+
+  const fmtMin=(m)=>`${String(Math.floor(Math.abs(m)/60)).padStart(2,'0')}:${String(Math.abs(m)%60).padStart(2,'0')}`;
+  const totalHEStr=totalHE>0?`+${fmtMin(totalHE)}`:'—';
+  const totalTrabStr=totalTrab>0?fmtMin(totalTrab):'—';
+  const totalContStr=totalCont>0?fmtMin(totalCont):'—';
+  const totalFaltaStr=totalFalta>0?fmtMin(totalFalta):'—';
+
+  res.innerHTML=`
+    <span>📅 <strong>${fd(di)} a ${fd(df)}</strong></span>
+    <span>Total: <strong>${dadosCons.length}</strong></span>
+    <span>✅ Presenças: <strong>${dadosCons.filter(r=>r.tipoLinha==='ln'&&r.entrada).length}</strong></span>
+    <span>❌ Faltas: <strong>${dadosCons.filter(r=>r.tipoLinha==='lf').length}</strong></span>
+    <span>⚠️ Exceções: <strong>${dadosCons.filter(r=>r.temExcecao).length}</strong></span>
+    <span style="color:#2563EB;font-weight:800">🕐 H.Contratadas: <strong>${totalContStr}</strong></span>
+    <span style="color:#16A34A;font-weight:800">✅ H.Trabalhadas: <strong>${totalTrabStr}</strong></span>
+    <span style="color:#DC2626;font-weight:800">❌ H.Falta: <strong>${totalFaltaStr}</strong></span>
+    <span style="color:#D97706;font-weight:800">⏱️ H.Extras: <strong>${totalHEStr}</strong></span>
+  `;
 
   if(!dadosCons.length){document.getElementById('rc').innerHTML='<div class="em"><div class="ic">📋</div>Nenhum registro.</div>';return;}
 
