@@ -789,6 +789,19 @@ window.buscar=async function(){
         vAlmoco=valores.vAlmoco;
         saida=valores.saida;
 
+        // Correção de ciclo incompleto:
+        // O sistema atribui os registros na sequência esperada (entrada→sAlmoco→vAlmoco→saida)
+        // Mas se o funcionário bateu menos registros, a última saída fica em coluna errada
+        // Regra simples: a última saída do dia (cronologicamente) SEMPRE é a saída final
+        const ultimaSaida=todosRegs.filter(r=>r.tipo==='saida'&&!r.exc).slice(-1)[0];
+        if(ultimaSaida&&!saida){
+          // A última saída não foi atribuída à coluna 'saida' — corrige
+          saida=ultimaSaida.hora;
+          // Limpa a coluna onde ela foi parar erroneamente
+          if(sAlmoco===saida) sAlmoco='';
+          if(vAlmoco===saida) vAlmoco='';
+        }
+
         // Extras: entradas e saídas de exceção
         excEntradas=extras.filter(r=>r.tipo==='entrada').map(r=>r.hora);
         excSaidas=extras.filter(r=>r.tipo==='saida').map(r=>r.hora);
