@@ -611,27 +611,39 @@ function calcHoras(entrada,sAlmoco,vAlmoco,saida){
   }catch{return '';}
 }
 
-function calcHorasExtras(entrada,sAlmoco,vAlmoco,saida,jornada){
-  // Retorna diferença entre trabalhado e previsto
-  // Positivo = hora extra, Negativo = hora falta
-  if(!entrada||!saida||!jornada||!jornada.length) return {extra:'',falta:''};
+function calcHorasExtras(entrada,sAlmoco,vAlmoco,saida,jornada,tipoLinha){
+  // Calcula diferença entre trabalhado e previsto na jornada
+  // Funciona mesmo com ciclo incompleto (sem saída) ou falta total
+  if(!jornada||!jornada.length) return {extra:'',falta:''};
+
+  const fmt=(m)=>`${String(Math.floor(Math.abs(m)/60)).padStart(2,'0')}:${String(Math.abs(m)%60).padStart(2,'0')}`;
+
+  // Calcula horas previstas na jornada
+  let previsto=0;
+  jornada.forEach(p=>{const dur=toMin(p.saida)-toMin(p.entrada);if(dur>0)previsto+=dur;});
+  if(previsto<=0) return {extra:'',falta:''};
+
+  // Falta total (sem nenhum registro)
+  if(!entrada){
+    // Só conta falta se for dia útil sem ausência justificada
+    if(tipoLinha==='lf') return {extra:'',falta:`-${fmt(previsto)}`};
+    return {extra:'',falta:''};
+  }
+
+  // Ciclo incompleto — tem entrada mas sem saída
+  if(entrada&&!saida){
+    return {extra:'',falta:`-${fmt(previsto)}`};
+  }
+
+  // Ciclo completo — calcula diferença real
   try{
     let trabalhado=toMin(saida)-toMin(entrada);
     if(trabalhado<=0) return {extra:'',falta:''};
     if(sAlmoco&&vAlmoco){const iv=toMin(vAlmoco)-toMin(sAlmoco);if(iv>0)trabalhado-=iv;}
     if(trabalhado<=0) return {extra:'',falta:''};
-
-    let previsto=0;
-    jornada.forEach(p=>{
-      const dur=toMin(p.saida)-toMin(p.entrada);
-      if(dur>0) previsto+=dur;
-    });
-    if(previsto<=0) return {extra:'',falta:''};
-
     const diff=trabalhado-previsto;
-    const fmt=(m)=>`${String(Math.floor(Math.abs(m)/60)).padStart(2,'0')}:${String(Math.abs(m)%60).padStart(2,'0')}`;
     if(diff>0) return {extra:`+${fmt(diff)}`,falta:''};
-    if(diff<0) return {extra:'',falta:`-${fmt(diff)}`};
+    if(diff<0) return {extra:'',falta:`-${fmt(Math.abs(diff))}`};
     return {extra:'',falta:''};
   }catch{return {extra:'',falta:''};}
 }
@@ -793,7 +805,7 @@ window.buscar=async function(){
         ocFinal=ocorrencia||'Falta';
       }
 
-      const diffHoras=calcHorasExtras(entrada,sAlmoco,vAlmoco,saida,jornada);
+      const diffHoras=calcHorasExtras(entrada,sAlmoco,vAlmoco,saida,jornada,tipoLinha);
       const horasExtras=diffHoras.extra;
       const horasFalta=diffHoras.falta;
       dadosCons.push({
@@ -814,30 +826,36 @@ window.buscar=async function(){
 
   const res=document.getElementById('resumo');
   res.style.display='flex';
-  // Totais de horas
-  let totalTrab=0, totalCont=0;
+  // Totais de horas — usando os valores já calculados por linha
+  let totalTrab=0, totalCont=0, totalHE=0, totalFalta=0;
   dadosCons.forEach(r=>{
-    // H. Trabalhadas
+    // H. Trabalhadas (só quando tem ciclo completo)
     if(r.horas){
       const p=r.horas.split(':');
       totalTrab+=parseInt(p[0])*60+parseInt(p[1]);
     }
-    // H. Contratadas — soma da jornada de TODOS os dias úteis (presença ou falta)
-    if(r.jornada&&r.jornada.length&&r.tipoLinha!=='lfr'&&r.tipoLinha!=='le'){
+    // H. Contratadas (todos os dias úteis exceto feriado/folga/ausência)
+    if(r.jornada&&r.jornada.length&&r.tipoLinha!=='lfr'&&r.tipoLinha!=='le'&&r.tipoLinha!=='la'){
       r.jornada.forEach(p=>{
         const dur=toMin(p.saida)-toMin(p.entrada);
         if(dur>0) totalCont+=dur;
       });
     }
+    // H. Extras (por linha)
+    if(r.horasExtras){
+      const p=r.horasExtras.replace('+','').split(':');
+      totalHE+=parseInt(p[0])*60+parseInt(p[1]);
+    }
+    // H. Falta (por linha — inclui falta total e ciclo incompleto)
+    if(r.horasFalta){
+      const p=r.horasFalta.replace('-','').split(':');
+      totalFalta+=parseInt(p[0])*60+parseInt(p[1]);
+    }
   });
 
   const fmtMin=(m)=>`${String(Math.floor(Math.abs(m)/60)).padStart(2,'0')}:${String(Math.abs(m)%60).padStart(2,'0')}`;
-
-  // Diferença: trabalhadas - contratadas
-  const diff=totalTrab-totalCont;
-  const totalHEStr=diff>0?`+${fmtMin(diff)}`:'—';
-  const totalFaltaStr=diff<0?fmtMin(diff):'—';
-
+  const totalHEStr=totalHE>0?`+${fmtMin(totalHE)}`:'—';
+  const totalFaltaStr=totalFalta>0?`-${fmtMin(totalFalta)}`:'—';
   const totalTrabStr=totalTrab>0?fmtMin(totalTrab):'—';
   const totalContStr=totalCont>0?fmtMin(totalCont):'—';
 
