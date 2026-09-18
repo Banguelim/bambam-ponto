@@ -266,9 +266,9 @@ tr:hover td{filter:brightness(.97);}
   <div class="card">
     <h2>➕ Novo funcionário</h2>
     <div class="add-form">
-      <div><label>Nome completo</label><input id="nn" placeholder="NOME" style="text-transform:uppercase"></div>
-      <div><label>Cargo</label><input id="nc" placeholder="Colaborador"></div>
-      <div><label>ID (ex: EMP012)</label><input id="ni" placeholder="Auto"></div>
+      <div><label>Nome completo</label><input id="nn" placeholder="NOME" style="text-transform:uppercase" autocomplete="off"></div>
+      <div><label>Cargo</label><input id="nc" placeholder="Colaborador" autocomplete="off"></div>
+      <div><label>ID (ex: EMP013)</label><input id="ni" placeholder="Deixe vazio — gerado automaticamente" autocomplete="off"></div>
       <div><label>Admissão</label><input type="date" id="nd"></div>
       <div><label>Meses p/ férias</label><input type="number" id="nf" value="12" min="1"></div>
     </div>
@@ -1047,9 +1047,18 @@ window.addFunc=async function(){
     const ns=funcs.map(f=>parseInt(f.id.replace(/\D/g,''))).filter(x=>!isNaN(x)&&x>0);
     id='EMP'+String((ns.length?Math.max(...ns):0)+1).padStart(3,'0');
   } else {
+    // Remove caracteres inválidos para o Firebase (. # $ [ ] @)
+    const idLimpo=id.replace(/[.#$\[\]@]/g,'').replace(/\s/g,'');
+    if(idLimpo!==id){
+      alert('⚠️ O campo ID contém caracteres inválidos. Deixe-o vazio para gerar automaticamente!');
+      document.getElementById('ni').value='';
+      document.getElementById('ni').focus();
+      return;
+    }
     // Verifica se ID já existe
     if(funcs.find(f=>f.id===id)){
       alert('⚠️ ID "'+id+'" já existe! Deixe o campo vazio para gerar automaticamente.');
+      document.getElementById('ni').value='';
       return;
     }
   }
