@@ -1034,15 +1034,55 @@ window.addFunc=async function(){
   const d=document.getElementById('nd').value;
   const mf=parseInt(document.getElementById('nf').value)||12;
   let id=document.getElementById('ni').value.trim().toUpperCase();
-  if(!n){alert('⚠️ Informe o nome.');return;}
-  if(!id){const ns=funcs.map(f=>parseInt(f.id.replace('EMP',''))).filter(x=>!isNaN(x));id='EMP'+String((ns.length?Math.max(...ns):0)+1).padStart(3,'0');}
-  else if(funcs.find(f=>f.id===id)){alert('⚠️ ID já existe.');return;}
-  // Jornada padrão
-  const jornada={seg:[{entrada:'07:00',saida:'11:00'},{entrada:'12:00',saida:'17:00'}],ter:[{entrada:'07:00',saida:'11:00'},{entrada:'12:00',saida:'17:00'}],qua:[{entrada:'07:00',saida:'11:00'},{entrada:'12:00',saida:'17:00'}],qui:[{entrada:'07:00',saida:'11:00'},{entrada:'12:00',saida:'17:00'}],sex:[{entrada:'07:00',saida:'11:00'},{entrada:'12:00',saida:'16:00'}],sab:[],dom:[]};
-  await set(ref(db,'funcionarios/'+id),{id,nome:n,cargo:c,admissao:d||'',mesesFerias:mf,jornada,desligamento:''});
-  document.getElementById('nn').value='';document.getElementById('nc').value='';
-  document.getElementById('ni').value='';document.getElementById('nd').value='';
-  toast(`✅ ${n.split(' ')[0]} adicionado(a)!`);
+
+  // Validações com mensagens claras
+  if(!n){
+    alert('⚠️ Informe o nome do funcionário!');
+    document.getElementById('nn').focus();
+    return;
+  }
+
+  // Gera ID automático se não informado
+  if(!id){
+    const ns=funcs.map(f=>parseInt(f.id.replace(/\D/g,''))).filter(x=>!isNaN(x)&&x>0);
+    id='EMP'+String((ns.length?Math.max(...ns):0)+1).padStart(3,'0');
+  } else {
+    // Verifica se ID já existe
+    if(funcs.find(f=>f.id===id)){
+      alert('⚠️ ID "'+id+'" já existe! Deixe o campo vazio para gerar automaticamente.');
+      return;
+    }
+  }
+
+  try{
+    const jornada={
+      seg:[{entrada:'07:00',saida:'11:00'},{entrada:'12:00',saida:'17:00'}],
+      ter:[{entrada:'07:00',saida:'11:00'},{entrada:'12:00',saida:'17:00'}],
+      qua:[{entrada:'07:00',saida:'11:00'},{entrada:'12:00',saida:'17:00'}],
+      qui:[{entrada:'07:00',saida:'11:00'},{entrada:'12:00',saida:'17:00'}],
+      sex:[{entrada:'07:00',saida:'11:00'},{entrada:'12:00',saida:'16:00'}],
+      sab:[],dom:[]
+    };
+
+    await set(ref(db,'funcionarios/'+id),{
+      id, nome:n, cargo:c,
+      admissao:d||'',
+      mesesFerias:mf,
+      jornada,
+      desligamento:''
+    });
+
+    // Limpa os campos
+    document.getElementById('nn').value='';
+    document.getElementById('nc').value='';
+    document.getElementById('ni').value='';
+    document.getElementById('nd').value='';
+    document.getElementById('nf').value='12';
+
+    toast('✅ '+n.split(' ')[0]+' ('+id+') adicionado(a) com sucesso!');
+  }catch(e){
+    alert('❌ Erro ao salvar: '+e.message);
+  }
 };
 
 window.remF=async function(id){
