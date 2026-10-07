@@ -757,12 +757,10 @@ window.buscar=async function(){
         const extras=[];
         let posSeq=0;
 
+        // Registros liberados pela exceção são batidas válidas: entram na
+        // sequência normal. Só viram "extra" se não couberem em nenhuma coluna.
+        const marcouExcecao=todosRegs.some(r=>r.exc);
         todosRegs.forEach(r=>{
-          if(r.exc){
-            // Registro marcado como exceção → vai para colunas extras
-            extras.push(r);
-            return;
-          }
           // Tenta encaixar o registro na próxima coluna esperada
           let usado=false;
           while(posSeq<sequencia.length){
@@ -793,19 +791,22 @@ window.buscar=async function(){
         // O sistema atribui os registros na sequência esperada (entrada→sAlmoco→vAlmoco→saida)
         // Mas se o funcionário bateu menos registros, a última saída fica em coluna errada
         // Regra simples: a última saída do dia (cronologicamente) SEMPRE é a saída final
-        const ultimaSaida=todosRegs.filter(r=>r.tipo==='saida'&&!r.exc).slice(-1)[0];
+        const ultimaSaida=todosRegs.filter(r=>r.tipo==='saida').slice(-1)[0];
         if(ultimaSaida&&!saida){
           // A última saída não foi atribuída à coluna 'saida' — corrige
           saida=ultimaSaida.hora;
           // Limpa a coluna onde ela foi parar erroneamente
           if(sAlmoco===saida) sAlmoco='';
           if(vAlmoco===saida) vAlmoco='';
+          // Se ela tinha ido para as colunas extras, tira de lá
+          const ix=extras.indexOf(ultimaSaida);
+          if(ix>=0) extras.splice(ix,1);
         }
 
-        // Extras: entradas e saídas de exceção
+        // Extras: batidas que sobraram (não couberam nas 4 colunas)
         excEntradas=extras.filter(r=>r.tipo==='entrada').map(r=>r.hora);
         excSaidas=extras.filter(r=>r.tipo==='saida').map(r=>r.hora);
-        temExcecao=excEntradas.length>0||excSaidas.length>0;
+        temExcecao=marcouExcecao||excEntradas.length>0||excSaidas.length>0;
 
         horas=calcHoras(entrada,sAlmoco,vAlmoco,saida);
         tipoLinha=temExcecao?'le':(statusD?'lfr':'ln');
@@ -848,7 +849,7 @@ window.buscar=async function(){
       totalTrab+=parseInt(p[0])*60+parseInt(p[1]);
     }
     // H. Contratadas (todos os dias úteis exceto feriado/folga/ausência)
-    if(r.jornada&&r.jornada.length&&r.tipoLinha!=='lfr'&&r.tipoLinha!=='le'&&r.tipoLinha!=='la'){
+    if(r.jornada&&r.jornada.length&&r.tipoLinha!=='lfr'&&r.tipoLinha!=='la'){
       r.jornada.forEach(p=>{
         const dur=toMin(p.saida)-toMin(p.entrada);
         if(dur>0) totalCont+=dur;
