@@ -143,13 +143,84 @@ tr:hover td{filter:brightness(.97);}
 .ms h4{font-size:.82rem;font-weight:800;color:var(--sub);text-transform:uppercase;margin-bottom:10px;}
 
 /* DIAS JORNADA */
-.dias-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;}
-.dia-card{background:var(--hover);border:1.5px solid var(--borda);border-radius:10px;padding:10px;}
-.dia-card.tem-jornada{border-color:var(--rosa);background:var(--rosa-l);}
-.dia-card label{font-size:.7rem;font-weight:800;color:var(--sub);display:block;margin-bottom:6px;text-transform:uppercase;}
-.periodo-mini{display:flex;gap:4px;align-items:center;margin-bottom:4px;}
-.periodo-mini input{width:70px;padding:4px 5px;border:1px solid var(--borda);border-radius:5px;font-size:.75rem;}
-.periodo-mini button{padding:2px 6px;border:none;border-radius:4px;cursor:pointer;font-size:.72rem;background:#FEE2E2;color:var(--vermelho);}
+/* ── JORNADA GRID REDESENHADA ── */
+.dias-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:4px;}
+@media(max-width:900px){.dias-grid{grid-template-columns:repeat(4,1fr);}}
+@media(max-width:600px){.dias-grid{grid-template-columns:repeat(2,1fr);}}
+
+.dia-card{
+  background:#fff;
+  border:2px solid var(--borda);
+  border-radius:12px;
+  padding:10px 8px 8px;
+  display:flex;flex-direction:column;gap:6px;
+  transition:.15s;
+  min-height:90px;
+}
+.dia-card.tem-jornada{
+  border-color:var(--rosa);
+  background:var(--rosa-l);
+  box-shadow:0 2px 8px #DB277715;
+}
+.dia-card.folga{
+  background:#F8FAFC;
+  border-style:dashed;
+  opacity:.7;
+}
+.dia-header{
+  display:flex;align-items:center;justify-content:space-between;
+}
+.dia-nome{
+  font-size:.8rem;font-weight:900;
+  color:var(--sub);text-transform:uppercase;letter-spacing:.05em;
+}
+.dia-card.tem-jornada .dia-nome{color:var(--rosa-d);}
+.dia-total{
+  font-size:.65rem;font-weight:700;
+  color:var(--verde);
+  background:#DCFCE7;border-radius:20px;
+  padding:1px 6px;
+}
+
+.turno-row{
+  display:flex;align-items:center;gap:4px;
+  background:#fff;
+  border:1.5px solid var(--borda);
+  border-radius:8px;
+  padding:4px 6px;
+}
+.dia-card.tem-jornada .turno-row{border-color:#FBCFE8;}
+.turno-row input[type=time]{
+  flex:1;min-width:0;
+  border:none;outline:none;
+  font-size:.8rem;font-weight:700;
+  color:var(--texto);
+  background:transparent;
+  font-family:'Nunito',sans-serif;
+}
+.turno-sep{font-size:.75rem;color:var(--sub);font-weight:700;padding:0 2px;}
+.turno-del{
+  border:none;background:none;cursor:pointer;
+  color:#CBD5E1;font-size:.9rem;line-height:1;
+  padding:0 2px;border-radius:4px;
+  transition:.15s;flex-shrink:0;
+}
+.turno-del:hover{color:var(--vermelho);background:#FEE2E2;}
+
+.add-per-btn{
+  display:flex;align-items:center;justify-content:center;gap:4px;
+  width:100%;padding:5px;
+  border:1.5px dashed var(--borda);border-radius:8px;
+  background:transparent;cursor:pointer;
+  font-size:.72rem;font-weight:700;color:var(--sub);
+  font-family:'Nunito',sans-serif;
+  transition:.15s;margin-top:2px;
+}
+.add-per-btn:hover{border-color:var(--rosa);color:var(--rosa);background:var(--rosa-l);}
+.folga-label{
+  font-size:.7rem;color:#94A3B8;text-align:center;
+  margin:auto 0;padding:4px 0;
+}
 .add-per{font-size:.72rem;padding:3px 8px;border:1px dashed var(--borda);border-radius:5px;cursor:pointer;background:transparent;color:var(--sub);}
 
 /* AUSÊNCIAS */
@@ -1114,33 +1185,57 @@ window.remF=async function(id){
 };
 
 // ── MODAL JORNADA ──
+function calcTotalDia(periodos){
+  let min=0;
+  periodos.forEach(p=>{
+    if(!p.entrada||!p.saida)return;
+    const d=toMin(p.saida)-toMin(p.entrada);
+    if(d>0)min+=d;
+  });
+  if(!min)return '';
+  return `${String(Math.floor(min/60)).padStart(2,'0')}h${String(min%60).padStart(2,'0')}`;
+}
+
 function renderDiasGrid(){
   const grid=document.getElementById('dias-grid');
   grid.innerHTML=DIAS_KEY.map((dk,idx)=>{
     const periodos=jornadaEdit[dk]||[];
     const temJornada=periodos.length>0;
-    const periodosHtml=periodos.map((p,pi)=>`
-      <div class="periodo-mini">
-        <div style="display:flex;align-items:center;gap:4px">
-          <input type="time" value="${p.entrada}" onchange="updatePer('${dk}',${pi},'entrada',this.value)" style="flex:1">
-          <span style="font-size:.65rem;color:var(--sub)">↓</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:4px">
-          <input type="time" value="${p.saida}" onchange="updatePer('${dk}',${pi},'saida',this.value)" style="flex:1">
-          <button class="rem-per-btn" onclick="remPer('${dk}',${pi})">✕</button>
-        </div>
+    const total=calcTotalDia(periodos);
+
+    const turnosHtml=periodos.map((p,pi)=>`
+      <div class="turno-row">
+        <input type="time" value="${p.entrada}"
+          onchange="updatePer('${dk}',${pi},'entrada',this.value)"
+          title="Entrada">
+        <span class="turno-sep">→</span>
+        <input type="time" value="${p.saida}"
+          onchange="updatePer('${dk}',${pi},'saida',this.value)"
+          title="Saída">
+        <button class="turno-del" onclick="remPer('${dk}',${pi})" title="Remover turno">×</button>
       </div>`).join('');
-    return `<div class="dia-card${temJornada?' tem-jornada':''}">
-      <label>${DIAS_CURTO[idx]}</label>
-      ${periodosHtml}
-      <button class="add-per-btn" onclick="addPer('${dk}')">+ turno</button>
+
+    const folga=!temJornada?'<div class="folga-label">☀️ Folga</div>':'';
+
+    return `<div class="dia-card${temJornada?' tem-jornada':' folga'}" data-dk="${dk}">
+      <div class="dia-header">
+        <span class="dia-nome">${DIAS_CURTO[idx]}</span>
+        ${total?`<span class="dia-total">${total}</span>`:''}
+      </div>
+      ${turnosHtml}
+      ${folga}
+      <button class="add-per-btn" onclick="addPer('${dk}')">＋ turno</button>
     </div>`;
   }).join('');
 }
 
 window.addPer=function(dk){
   if(!jornadaEdit[dk]) jornadaEdit[dk]=[];
-  jornadaEdit[dk].push({entrada:'07:00',saida:'12:00'});
+  // 1º turno = manhã, 2º+ = tarde
+  const j=jornadaEdit[dk];
+  if(j.length===0) j.push({entrada:'07:00',saida:'11:00'});
+  else if(j.length===1) j.push({entrada:'12:30',saida:'17:30'});
+  else j.push({entrada:'17:30',saida:'18:30'});
   renderDiasGrid();
 };
 window.remPer=function(dk,idx){jornadaEdit[dk].splice(idx,1);renderDiasGrid();};
