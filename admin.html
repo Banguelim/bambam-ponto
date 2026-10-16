@@ -612,20 +612,20 @@ function calcHoras(entrada,sAlmoco,vAlmoco,saida){
 }
 
 function calcHorasExtras(entrada,sAlmoco,vAlmoco,saida,jornada,tipoLinha){
-  // Calcula diferença entre trabalhado e previsto na jornada
-  // Funciona mesmo com ciclo incompleto (sem saída) ou falta total
-  if(!jornada||!jornada.length) return {extra:'',falta:''};
+  // Calcula diferença entre horas TRABALHADAS e jornada prevista (compensação)
+  // Previsto: usa jornada configurada do funcionário; fallback = 9h (540 min)
 
   const fmt=(m)=>`${String(Math.floor(Math.abs(m)/60)).padStart(2,'0')}:${String(Math.abs(m)%60).padStart(2,'0')}`;
 
-  // Calcula horas previstas na jornada
+  // Calcula horas previstas: soma períodos da jornada, ou usa 9h fixas
   let previsto=0;
-  jornada.forEach(p=>{const dur=toMin(p.saida)-toMin(p.entrada);if(dur>0)previsto+=dur;});
-  if(previsto<=0) return {extra:'',falta:''};
+  if(jornada&&jornada.length){
+    jornada.forEach(p=>{const dur=toMin(p.saida)-toMin(p.entrada);if(dur>0)previsto+=dur;});
+  }
+  if(previsto<=0) previsto=540; // padrão: 9 horas = 540 minutos
 
   // Falta total (sem nenhum registro)
   if(!entrada){
-    // Só conta falta se for dia útil sem ausência justificada
     if(tipoLinha==='lf') return {extra:'',falta:`-${fmt(previsto)}`};
     return {extra:'',falta:''};
   }
@@ -635,11 +635,21 @@ function calcHorasExtras(entrada,sAlmoco,vAlmoco,saida,jornada,tipoLinha){
     return {extra:'',falta:`-${fmt(previsto)}`};
   }
 
-  // Ciclo completo — calcula diferença real
+  // Ciclo completo — calcula horas REALMENTE trabalhadas (modelo compensação)
   try{
-    let trabalhado=toMin(saida)-toMin(entrada);
-    if(trabalhado<=0) return {extra:'',falta:''};
-    if(sAlmoco&&vAlmoco){const iv=toMin(vAlmoco)-toMin(sAlmoco);if(iv>0)trabalhado-=iv;}
+    // Período 1: entrada até saída do almoço (ou até saída final se sem almoço)
+    // Período 2: retorno do almoço até saída final
+    let trabalhado=0;
+    if(sAlmoco&&vAlmoco){
+      // Com almoço: soma 2 períodos separados
+      const p1=toMin(sAlmoco)-toMin(entrada); // manhã
+      const p2=toMin(saida)-toMin(vAlmoco);   // tarde
+      if(p1>0) trabalhado+=p1;
+      if(p2>0) trabalhado+=p2;
+    } else {
+      // Sem almoço registrado: total corrido
+      trabalhado=toMin(saida)-toMin(entrada);
+    }
     if(trabalhado<=0) return {extra:'',falta:''};
     const diff=trabalhado-previsto;
     if(diff>0) return {extra:`+${fmt(diff)}`,falta:''};
