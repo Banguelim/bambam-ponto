@@ -682,7 +682,23 @@ function calcHoras(entrada,sAlmoco,vAlmoco,saida){
   }catch{return '';}
 }
 
-function calcHorasExtras(entrada,sAlmoco,vAlmoco,saida,jornada,tipoLinha){
+// Soma todos os pares entrada→saída do dia (inclui batidas de exceção:
+// ex. entrada, s.almoço, v.almoço, saída, entrada extra, saída extra).
+function calcTrabalhadoMin(todosRegs){
+  let total=0,aberta=null;
+  todosRegs.forEach(r=>{
+    if(r.tipo==='entrada'){ if(aberta===null) aberta=toMin(r.hora); }
+    else if(aberta!==null){
+      const d=toMin(r.hora)-aberta;
+      if(d>0) total+=d;
+      aberta=null;
+    }
+  });
+  return total;
+}
+const fmtHM=(m)=>`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;
+
+function calcHorasExtras(entrada,sAlmoco,vAlmoco,saida,jornada,tipoLinha,trabMin){
   // Calcula diferença entre horas TRABALHADAS e jornada prevista (compensação)
   // Previsto: usa jornada configurada do funcionário; fallback = 9h (540 min)
 
@@ -711,7 +727,10 @@ function calcHorasExtras(entrada,sAlmoco,vAlmoco,saida,jornada,tipoLinha){
     // Período 1: entrada até saída do almoço (ou até saída final se sem almoço)
     // Período 2: retorno do almoço até saída final
     let trabalhado=0;
-    if(sAlmoco&&vAlmoco){
+    if(trabMin>0){
+      // Total já calculado com todos os pares de batidas (inclui exceções)
+      trabalhado=trabMin;
+    } else if(sAlmoco&&vAlmoco){
       // Com almoço: soma 2 períodos separados
       const p1=toMin(sAlmoco)-toMin(entrada); // manhã
       const p2=toMin(saida)-toMin(vAlmoco);   // tarde
@@ -811,7 +830,7 @@ window.buscar=async function(){
 
       let entrada='',sAlmoco='',vAlmoco='',saida='';
       let excEntradas=[],excSaidas=[];
-      let horas='',tipoLinha='normal',ocFinal='Normal',temExcecao=false;
+      let horas='',tipoLinha='normal',ocFinal='Normal',temExcecao=false,trabMin=0;
 
       if(regs){
         // Junta todos os registros e ordena por hora cronologicamente
@@ -889,7 +908,10 @@ window.buscar=async function(){
         excSaidas=extras.filter(r=>r.tipo==='saida').map(r=>r.hora);
         temExcecao=marcouExcecao||excEntradas.length>0||excSaidas.length>0;
 
-        horas=calcHoras(entrada,sAlmoco,vAlmoco,saida);
+        // Horas trabalhadas = soma de TODOS os pares entrada→saída do dia,
+        // inclusive batidas extras (exceção). Só conta com ciclo fechado.
+        trabMin=(entrada&&saida)?calcTrabalhadoMin(todosRegs):0;
+        horas=trabMin>0?fmtHM(trabMin):calcHoras(entrada,sAlmoco,vAlmoco,saida);
         tipoLinha=temExcecao?'le':(statusD?'lfr':'ln');
         ocFinal=ocorrencia||'Normal';
       } else if(ausencia){
@@ -900,7 +922,7 @@ window.buscar=async function(){
         ocFinal=ocorrencia||'Falta';
       }
 
-      const diffHoras=calcHorasExtras(entrada,sAlmoco,vAlmoco,saida,jornada,tipoLinha);
+      const diffHoras=calcHorasExtras(entrada,sAlmoco,vAlmoco,saida,jornada,tipoLinha,trabMin);
       const horasExtras=diffHoras.extra;
       const horasFalta=diffHoras.falta;
       dadosCons.push({
