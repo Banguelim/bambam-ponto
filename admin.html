@@ -329,6 +329,7 @@ tr:hover td{filter:brightness(.97);}
     </div>
   </div>
   <div class="resumo" id="resumo"></div>
+  <div id="saldos"></div>
   <div id="rc"><div class="em"><div class="ic">📋</div>Selecione o período e clique em Buscar.</div></div>
 </div>
 
@@ -684,10 +685,10 @@ function calcHoras(entrada,sAlmoco,vAlmoco,saida){
 
 // Soma todos os pares entrada→saída do dia (inclui batidas de exceção:
 // ex. entrada, s.almoço, v.almoço, saída, entrada extra, saída extra).
-function calcTrabalhadoMin(todosRegs){
+function calcTrabalhadoMin(todosRegs,jornada){
   let total=0,aberta=null;
   todosRegs.forEach(r=>{
-    if(r.tipo==='entrada'){ if(aberta===null) aberta=toMin(r.hora); }
+    if(r.tipo==='entrada'){ if(aberta===null) aberta=toMin(ajustarEntrada(r.hora,jornada)); }
     else if(aberta!==null){
       const d=toMin(r.hora)-aberta;
       if(d>0) total+=d;
@@ -696,9 +697,34 @@ function calcTrabalhadoMin(todosRegs){
   });
   return total;
 }
+// Batida de entrada ANTES do horário da jornada não conta: o funcionário chega
+// mais cedo e bate o ponto, mas só começa a trabalhar quando abre o expediente.
+// Vale para a entrada do dia e para a volta do almoço (ou de qualquer período):
+// se a batida cai antes do início do período (e depois do fim do período
+// anterior), ela é considerada no horário de início do período.
+// Ex.: jornada 07:00-11:00 / 12:00-17:00 → entrada 06:52 conta como 07:00;
+// volta do almoço 11:56 conta como 12:00. Saída depois do horário continua
+// contando como hora extra normalmente.
+function ajustarEntrada(hora,jornada){
+  if(!hora||!jornada||!jornada.length) return hora;
+  const t=toMin(hora);
+  const pers=[...jornada].filter(p=>p.entrada&&p.saida).sort((a,b)=>a.entrada.localeCompare(b.entrada));
+  let fimAnterior=-1;
+  for(const p of pers){
+    const ini=toMin(p.entrada);
+    if(t<ini && t>=fimAnterior) return p.entrada;
+    if(t<ini) break;
+    fimAnterior=toMin(p.saida);
+  }
+  return hora;
+}
+// Ocorrências que justificam a ausência: não contam como falta nem como
+// hora contratada do dia (o dia fica abonado).
+const OC_JUSTIFICADAS=['Férias','Af. Doença','Afastamento','Atestado','Abonado','Lic. Maternidade','Folga','Feriado'];
+const isJustificada=(oc)=>OC_JUSTIFICADAS.includes(oc);
 const fmtHM=(m)=>`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;
 
-function calcHorasExtras(entrada,sAlmoco,vAlmoco,saida,jornada,tipoLinha,trabMin){
+function calcHorasExtras(entrada,sAlmoco,vAlmoco,saida,jornada,tipoLinha,trabMin,semExpediente){
   // Calcula diferença entre horas TRABALHADAS e jornada prevista (compensação)
   // Previsto: usa jornada configurada do funcionário; fallback = 9h (540 min)
 
@@ -710,6 +736,9 @@ function calcHorasExtras(entrada,sAlmoco,vAlmoco,saida,jornada,tipoLinha,trabMin
     jornada.forEach(p=>{const dur=toMin(p.saida)-toMin(p.entrada);if(dur>0)previsto+=dur;});
   }
   if(previsto<=0) previsto=540; // padrão: 9 horas = 540 minutos
+  // Feriado ou dia fora da jornada (ex.: sábado de quem não trabalha sábado):
+  // nada era previsto, então tudo que trabalhou é hora extra.
+  if(semExpediente) previsto=0;
 
   // Falta total (sem nenhum registro)
   if(!entrada){
@@ -740,7 +769,8 @@ function calcHorasExtras(entrada,sAlmoco,vAlmoco,saida,jornada,tipoLinha,trabMin
       // Sem almoço registrado: total corrido
       trabalhado=toMin(saida)-toMin(entrada);
     }
-    if(trabalhado<=0) return {extra:'',falta:''};
+    if(trabalhado<=0&&previsto===0) return {extra:'',falta:''};
+    if(trabalhado<=0) return {extra:'',falta:`-${fmt(previsto)}`};
     const diff=trabalhado-previsto;
     if(diff>0) return {extra:`+${fmt(diff)}`,falta:''};
     if(diff<0) return {extra:'',falta:`-${fmt(Math.abs(diff))}`};
@@ -788,6 +818,74 @@ async function buscarRegistros(datas){
   return regMap;
 }
 
+// Recalcula a falta efetiva de cada linha conforme a ocorrência:
+// ocorrência justificada (atestado, afastamento, férias...) abona a falta.
+function aplicarJustificativas(){
+  dadosCons.forEach(r=>{
+    r.justificado=isJustificada(r.ocorrencia)||r.tipoLinha==='la';
+    r.horasFalta=r.justificado?'':(r.horasFaltaBruta||'');
+  });
+}
+const hmParaMin=(s)=>{if(!s)return 0;const p=s.replace(/[+-]/,'').split(':');return parseInt(p[0])*60+parseInt(p[1]);};
+const fmtMinAbs=(m)=>`${String(Math.floor(Math.abs(m)/60)).padStart(2,'0')}:${String(Math.abs(m)%60).padStart(2,'0')}`;
+const fmtSaldo=(m)=>m>0?`+${fmtMinAbs(m)}`:m<0?`-${fmtMinAbs(m)}`:'00:00';
+function previstoLinha(r){
+  if(!r.jornada||!r.jornada.length||r.semExpediente||r.justificado) return 0;
+  let t=0;r.jornada.forEach(p=>{const d=toMin(p.saida)-toMin(p.entrada);if(d>0)t+=d;});
+  return t;
+}
+// Totais por funcionário: as horas extras de um dia compensam as faltas de
+// outro. Saldo = H.Extras − H.Falta (positivo = trabalhou a mais no período).
+function calcSaldos(){
+  const por={};
+  dadosCons.forEach(r=>{
+    const s=por[r.empId]||(por[r.empId]={empId:r.empId,nome:r.nome,cont:0,trab:0,he:0,falta:0,diasTrab:0,diasFalta:0,diasJust:0});
+    s.cont+=previstoLinha(r);
+    s.trab+=hmParaMin(r.horas);
+    s.he+=hmParaMin(r.horasExtras);
+    s.falta+=hmParaMin(r.horasFalta);
+    if(r.entrada) s.diasTrab++;
+    if(r.justificado&&!r.entrada) s.diasJust++;
+    else if(r.tipoLinha==='lf'&&!r.justificado) s.diasFalta++;
+  });
+  return Object.values(por).map(s=>({...s,saldo:s.he-s.falta})).sort((a,b)=>a.nome.localeCompare(b.nome));
+}
+function renderResumo(di,df){
+  const res=document.getElementById('resumo');
+  res.style.display='flex';
+  const saldos=calcSaldos();
+  const tot=saldos.reduce((a,s)=>({cont:a.cont+s.cont,trab:a.trab+s.trab,he:a.he+s.he,falta:a.falta+s.falta}),{cont:0,trab:0,he:0,falta:0});
+  const saldoTot=tot.he-tot.falta;
+  const fmtOuTraco=(m,p)=>m>0?p+fmtMinAbs(m):'—';
+  res.innerHTML=`
+    <span>📅 <strong>${fd(di)} a ${fd(df)}</strong></span>
+    <span>Total: <strong>${dadosCons.length}</strong></span>
+    <span>✅ Presenças: <strong>${dadosCons.filter(r=>r.tipoLinha==='ln'&&r.entrada).length}</strong></span>
+    <span>❌ Faltas: <strong>${dadosCons.filter(r=>r.tipoLinha==='lf'&&!r.justificado).length}</strong></span>
+    <span>📄 Justificadas: <strong>${dadosCons.filter(r=>r.justificado&&!r.entrada).length}</strong></span>
+    <span>⚠️ Exceções: <strong>${dadosCons.filter(r=>r.temExcecao).length}</strong></span>
+    <span style="color:#2563EB;font-weight:800">🕐 H.Contratadas: <strong>${fmtOuTraco(tot.cont,'')}</strong></span>
+    <span style="color:#16A34A;font-weight:800">✅ H.Trabalhadas: <strong>${fmtOuTraco(tot.trab,'')}</strong></span>
+    <span style="color:#DC2626;font-weight:800">❌ H.Falta: <strong>${fmtOuTraco(tot.falta,'-')}</strong></span>
+    <span style="color:#D97706;font-weight:800">⏱️ H.Extras: <strong>${fmtOuTraco(tot.he,'+')}</strong></span>
+    <span style="color:${saldoTot>=0?'#16A34A':'#DC2626'};font-weight:900">⚖️ Saldo: <strong>${fmtSaldo(saldoTot)}</strong></span>
+  `;
+  const box=document.getElementById('saldos');
+  if(!box) return;
+  if(!saldos.length){box.innerHTML='';return;}
+  box.innerHTML=`<div class="tw" style="margin-bottom:12px"><table>
+    <thead><tr><th class="sn">Funcionário</th><th>Dias trab.</th><th>Faltas</th><th>Justif.</th><th>H.Contratadas</th><th>H.Trabalhadas</th><th>H.Extras</th><th>H.Falta</th><th>⚖️ Saldo do período</th></tr></thead>
+    <tbody>${saldos.map(s=>`<tr>
+      <td class="sn"><strong>${s.nome}</strong></td>
+      <td>${s.diasTrab}</td><td>${s.diasFalta}</td><td>${s.diasJust}</td>
+      <td style="font-family:monospace">${fmtMinAbs(s.cont)}</td>
+      <td style="font-family:monospace">${fmtMinAbs(s.trab)}</td>
+      <td style="font-family:monospace;color:#D97706">${s.he?'+'+fmtMinAbs(s.he):'—'}</td>
+      <td style="font-family:monospace;color:#DC2626">${s.falta?'-'+fmtMinAbs(s.falta):'—'}</td>
+      <td style="font-family:monospace;font-weight:900;color:${s.saldo>0?'#16A34A':s.saldo<0?'#DC2626':'var(--sub)'}">${fmtSaldo(s.saldo)} ${s.saldo>0?'(a mais)':s.saldo<0?'(a menos)':''}</td>
+    </tr>`).join('')}</tbody></table></div>`;
+}
+
 window.buscar=async function(){
   const di=document.getElementById('di').value,df=document.getElementById('df').value;
   if(!di||!df){alert('⚠️ Selecione as datas.');return;}
@@ -804,7 +902,7 @@ window.buscar=async function(){
   // Funcionários ativos no período (considera data de desligamento)
   // Aplica filtro de funcionário se selecionado
   const filtroSel=document.getElementById('ff-func')?.value||'';
-  let funcsAtivos=funcs.filter(f=>!f.desligamento||f.desligamento>=di);
+  let funcsAtivos=funcs.filter(f=>(!f.desligamento||f.desligamento>=di)&&(!f.admissao||f.admissao<=df));
   if(filtroSel) funcsAtivos=funcsAtivos.filter(f=>f.id===filtroSel);
 
   datas.forEach(data=>{
@@ -816,6 +914,8 @@ window.buscar=async function(){
     funcsAtivos.forEach(f=>{
       // Ignora se funcionário já foi desligado antes desta data
       if(f.desligamento&&f.desligamento<data) return;
+      // Ignora dias anteriores à admissão (não é falta: ainda não trabalhava aqui)
+      if(f.admissao&&data<f.admissao) return;
 
       const key=f.id+'|'+data;
       const regs=regMap[key];
@@ -910,8 +1010,8 @@ window.buscar=async function(){
 
         // Horas trabalhadas = soma de TODOS os pares entrada→saída do dia,
         // inclusive batidas extras (exceção). Só conta com ciclo fechado.
-        trabMin=(entrada&&saida)?calcTrabalhadoMin(todosRegs):0;
-        horas=trabMin>0?fmtHM(trabMin):calcHoras(entrada,sAlmoco,vAlmoco,saida);
+        trabMin=(entrada&&saida)?calcTrabalhadoMin(todosRegs,jornada):0;
+        horas=trabMin>0?fmtHM(trabMin):calcHoras(ajustarEntrada(entrada,jornada),sAlmoco,ajustarEntrada(vAlmoco,jornada),saida);
         tipoLinha=temExcecao?'le':(statusD?'lfr':'ln');
         ocFinal=ocorrencia||'Normal';
       } else if(ausencia){
@@ -922,12 +1022,15 @@ window.buscar=async function(){
         ocFinal=ocorrencia||'Falta';
       }
 
-      const diffHoras=calcHorasExtras(entrada,sAlmoco,vAlmoco,saida,jornada,tipoLinha,trabMin);
+      const temJornadaCfg=f.jornada&&Object.values(f.jornada).some(v=>v&&v.length);
+      const semExpediente=!!statusD||(!jornada&&temJornadaCfg);
+      const ea=ajustarEntrada(entrada,jornada),va=ajustarEntrada(vAlmoco,jornada);
+      const diffHoras=calcHorasExtras(ea,sAlmoco,va,saida,jornada,tipoLinha,trabMin,semExpediente);
       const horasExtras=diffHoras.extra;
-      const horasFalta=diffHoras.falta;
+      const horasFaltaBruta=diffHoras.falta;
       dadosCons.push({
         empId:f.id,nome:f.nome,cargo:f.cargo||'',data,diaNome,diaCurto,
-        entrada,sAlmoco,vAlmoco,saida,horas,horasExtras,horasFalta,jornada,
+        entrada,sAlmoco,vAlmoco,saida,horas,horasExtras,horasFaltaBruta,jornada,semExpediente,
         excEntradas,excSaidas,temExcecao,
         ocorrencia:ocFinal,ausencia,tipoLinha,
         statusD:statusD?.desc||''
@@ -941,57 +1044,13 @@ window.buscar=async function(){
   const maxExcE=Math.max(0,...dadosCons.map(r=>r.excEntradas.length));
   const maxExcS=Math.max(0,...dadosCons.map(r=>r.excSaidas.length));
 
-  const res=document.getElementById('resumo');
-  res.style.display='flex';
-  // Totais de horas — usando os valores já calculados por linha
-  let totalTrab=0, totalCont=0, totalHE=0, totalFalta=0;
-  dadosCons.forEach(r=>{
-    // H. Trabalhadas (só quando tem ciclo completo)
-    if(r.horas){
-      const p=r.horas.split(':');
-      totalTrab+=parseInt(p[0])*60+parseInt(p[1]);
-    }
-    // H. Contratadas (todos os dias úteis exceto feriado/folga/ausência)
-    if(r.jornada&&r.jornada.length&&r.tipoLinha!=='lfr'&&r.tipoLinha!=='la'){
-      r.jornada.forEach(p=>{
-        const dur=toMin(p.saida)-toMin(p.entrada);
-        if(dur>0) totalCont+=dur;
-      });
-    }
-    // H. Extras (por linha)
-    if(r.horasExtras){
-      const p=r.horasExtras.replace('+','').split(':');
-      totalHE+=parseInt(p[0])*60+parseInt(p[1]);
-    }
-    // H. Falta (por linha — inclui falta total e ciclo incompleto)
-    if(r.horasFalta){
-      const p=r.horasFalta.replace('-','').split(':');
-      totalFalta+=parseInt(p[0])*60+parseInt(p[1]);
-    }
-  });
-
-  const fmtMin=(m)=>`${String(Math.floor(Math.abs(m)/60)).padStart(2,'0')}:${String(Math.abs(m)%60).padStart(2,'0')}`;
-  const totalHEStr=totalHE>0?`+${fmtMin(totalHE)}`:'—';
-  const totalFaltaStr=totalFalta>0?`-${fmtMin(totalFalta)}`:'—';
-  const totalTrabStr=totalTrab>0?fmtMin(totalTrab):'—';
-  const totalContStr=totalCont>0?fmtMin(totalCont):'—';
-
-  res.innerHTML=`
-    <span>📅 <strong>${fd(di)} a ${fd(df)}</strong></span>
-    <span>Total: <strong>${dadosCons.length}</strong></span>
-    <span>✅ Presenças: <strong>${dadosCons.filter(r=>r.tipoLinha==='ln'&&r.entrada).length}</strong></span>
-    <span>❌ Faltas: <strong>${dadosCons.filter(r=>r.tipoLinha==='lf').length}</strong></span>
-    <span>⚠️ Exceções: <strong>${dadosCons.filter(r=>r.temExcecao).length}</strong></span>
-    <span style="color:#2563EB;font-weight:800">🕐 H.Contratadas: <strong>${totalContStr}</strong></span>
-    <span style="color:#16A34A;font-weight:800">✅ H.Trabalhadas: <strong>${totalTrabStr}</strong></span>
-    <span style="color:#DC2626;font-weight:800">❌ H.Falta: <strong>${totalFaltaStr}</strong></span>
-    <span style="color:#D97706;font-weight:800">⏱️ H.Extras: <strong>${totalHEStr}</strong></span>
-  `;
+  aplicarJustificativas();
+  renderResumo(di,df);
 
   if(!dadosCons.length){document.getElementById('rc').innerHTML='<div class="em"><div class="ic">📋</div>Nenhum registro.</div>';return;}
 
-  const opts=['Normal','Férias','Af. Doença','Falta','Atestado','Lic. Maternidade','Folga','Feriado','Exceção','Outro'];
-  const cm={Normal:'normal',Férias:'ferias','Af. Doença':'doenca',Falta:'falta',Atestado:'atestado','Lic. Maternidade':'licenca',Folga:'folga',Feriado:'feriado',Exceção:'excecao',Outro:'outro'};
+  const opts=['Normal','Férias','Af. Doença','Afastamento','Falta','Atestado','Abonado','Lic. Maternidade','Folga','Feriado','Exceção','Outro'];
+  const cm={Normal:'normal',Férias:'ferias','Af. Doença':'doenca',Afastamento:'doenca',Abonado:'atestado',Falta:'falta',Atestado:'atestado','Lic. Maternidade':'licenca',Folga:'folga',Feriado:'feriado',Exceção:'excecao',Outro:'outro'};
 
   // Cabeçalho dinâmico com colunas de exceção
   let excHeaders='';
@@ -1019,7 +1078,7 @@ window.buscar=async function(){
         <td class="${r.vAlmoco?'hora':'vazio'}">${r.vAlmoco||'—'}</td>
         <td class="${r.saida?'hora':'vazio'}">${r.saida||'—'}</td>
         ${excCols}<td class="${r.horas?'horas':'vazio'}">${r.horas||'—'}</td>
-        <td style="font-family:monospace;font-weight:900;${r.horasExtras?'color:#D97706':r.horasFalta?'color:#DC2626':'color:#CBD5E1'}">${r.horasExtras||r.horasFalta||'—'}</td>
+        <td id="hx-${idx}" style="font-family:monospace;font-weight:900;${celHX(r).cor}">${celHX(r).txt}</td>
         <td class="so" style="display:flex;gap:6px;align-items:center">
           <select class="os ${cm[r.ocorrencia]||'normal'}" onchange="salvarOc('${r.empId}','${r.data}',this.value,this,${idx})">${opts.map(o=>`<option ${o===r.ocorrencia?'selected':''}>${o}</option>`).join('')}</select>
           <button onclick="abrirEdicao('${r.empId}','${r.data}','${r.nome}')" style="padding:4px 8px;border:1.5px solid #93C5FD;border-radius:7px;background:#EFF6FF;color:#1D4ED8;cursor:pointer;font-size:.72rem;font-weight:700;white-space:nowrap">✏️ Editar</button>
@@ -1028,11 +1087,22 @@ window.buscar=async function(){
     }).join('')}</tbody></table></div>`;
 };
 
+function celHX(r){
+  if(r.horasExtras) return {txt:r.horasExtras,cor:'color:#D97706'};
+  if(r.horasFalta) return {txt:r.horasFalta,cor:'color:#DC2626'};
+  if(r.justificado&&r.horasFaltaBruta) return {txt:'Abonado',cor:'color:#1D4ED8;font-size:.7rem'};
+  return {txt:'—',cor:'color:#CBD5E1'};
+}
 window.salvarOc=async function(id,data,val,el,idx){
-  const cm={Normal:'normal',Férias:'ferias','Af. Doença':'doenca',Falta:'falta',Atestado:'atestado','Lic. Maternidade':'licenca',Folga:'folga',Feriado:'feriado',Exceção:'excecao',Outro:'outro'};
+  const cm={Normal:'normal',Férias:'ferias','Af. Doença':'doenca',Afastamento:'doenca',Abonado:'atestado',Falta:'falta',Atestado:'atestado','Lic. Maternidade':'licenca',Folga:'folga',Feriado:'feriado',Exceção:'excecao',Outro:'outro'};
   el.className='os '+(cm[val]||'normal');
   if(dadosCons[idx])dadosCons[idx].ocorrencia=val;
   await set(ref(db,'ocorrencias/'+data+'/'+id),val);
+  // Recalcula falta/saldo na hora (justificar abona a falta do dia)
+  aplicarJustificativas();
+  const cel=document.getElementById('hx-'+idx);
+  if(cel&&dadosCons[idx]){const c=celHX(dadosCons[idx]);cel.textContent=c.txt;cel.setAttribute('style','font-family:monospace;font-weight:900;'+c.cor);}
+  renderResumo(document.getElementById('di').value,document.getElementById('df').value);
   let b=el.parentElement.querySelector('.sb3');if(b)b.remove();
   b=document.createElement('span');b.className='sb3';b.textContent='✓';
   el.parentElement.appendChild(b);
@@ -1053,6 +1123,7 @@ window.exportar=function(){
   for(let i=0;i<maxExcS;i++) cab.push(`Exc.Saída ${i+1}`);
   cab.push('Horas Trabalhadas');
   cab.push('Horas Extras');
+  cab.push('Horas Falta');
   cab.push('Ocorrência');
 
   const linhas=[cab];
@@ -1062,10 +1133,11 @@ window.exportar=function(){
     for(let i=0;i<maxExcS;i++) row.push(r.excSaidas[i]||'');
     row.push(r.horas||'');
     row.push(r.horasExtras||'');
+    row.push(r.horasFalta||(r.justificado&&r.horasFaltaBruta?'Abonado':''));
     row.push(r.ocorrencia||'Normal');
     linhas.push(row);
   });
-  linhas.push(['','Total: '+dadosCons.length,'','','','','','','','Faltas: '+dadosCons.filter(r=>r.tipoLinha==='lf').length]);
+  linhas.push(['','Total: '+dadosCons.length,'','','','','','','','Faltas: '+dadosCons.filter(r=>r.tipoLinha==='lf'&&!r.justificado).length]);
 
   const wb=XLSX.utils.book_new();
   const ws=XLSX.utils.aoa_to_sheet(linhas);
@@ -1074,6 +1146,11 @@ window.exportar=function(){
   cols.push({wch:14});
   ws['!cols']=cols;
   XLSX.utils.book_append_sheet(wb,ws,'Ponto BAMBAM BABY');
+  const linSaldo=[['ID','Funcionário','Dias trabalhados','Faltas','Justificadas','H.Contratadas','H.Trabalhadas','H.Extras','H.Falta','Saldo do período']];
+  calcSaldos().forEach(s=>linSaldo.push([s.empId,s.nome,s.diasTrab,s.diasFalta,s.diasJust,fmtMinAbs(s.cont),fmtMinAbs(s.trab),s.he?'+'+fmtMinAbs(s.he):'',s.falta?'-'+fmtMinAbs(s.falta):'',fmtSaldo(s.saldo)]));
+  const ws2=XLSX.utils.aoa_to_sheet(linSaldo);
+  ws2['!cols']=[{wch:8},{wch:34},{wch:10},{wch:8},{wch:12},{wch:14},{wch:14},{wch:12},{wch:12},{wch:16}];
+  XLSX.utils.book_append_sheet(wb,ws2,'Saldo por funcionário');
   XLSX.writeFile(wb,`Ponto_BAMBAM_${fd(di).replace(/\//g,'-')}_a_${fd(df).replace(/\//g,'-')}.xlsx`);
   toast('📊 Excel exportado!');
 };
